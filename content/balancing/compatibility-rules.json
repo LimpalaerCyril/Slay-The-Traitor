@@ -1,0 +1,26 @@
+[
+  {
+    "leftTag": "REQUIRES_PLAYER_DEATH",
+    "rightTag": "FORBIDS_PLAYER_DEATH",
+    "samePlayer": "FORBIDDEN",
+    "partyContradictionCost": 3
+  },
+  {
+    "leftTag": "REQUIRES_HIGH_GOLD",
+    "rightTag": "REQUIRES_LOW_GOLD",
+    "samePlayer": "FORBIDDEN",
+    "partyContradictionCost": 1
+  },
+  {
+    "leftTag": "SABOTAGE",
+    "rightTag": "PROTECTIVE",
+    "samePlayer": "ALLOWED",
+    "partyContradictionCost": 2
+  },
+  {
+    "leftTag": "REQUIRES_CURSE",
+    "rightTag": "PROTECTIVE",
+    "samePlayer": "ALLOWED",
+    "partyContradictionCost": 1
+  }
+]

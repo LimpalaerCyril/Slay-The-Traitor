@@ -1,0 +1,11 @@
+{
+  "code": "guardian",
+  "name": "Le Gardien",
+  "description": "Vos intérêts sont généralement alignés avec la survie de l'expédition.",
+  "alignment": "LOYAL",
+  "tags": [
+    "PROTECTIVE"
+  ],
+  "minimumPlayers": 2,
+  "maximumPlayers": 4
+}

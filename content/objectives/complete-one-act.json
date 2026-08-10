@@ -1,0 +1,29 @@
+{
+  "code": "complete-one-act",
+  "name": "Ascension",
+  "description": "Participer à l'achèvement d'au moins un acte.",
+  "category": "PERFORMANCE",
+  "difficulty": "EASY",
+  "minimumPlayers": 2,
+  "maximumPlayers": 4,
+  "allowedTypes": [
+    "PRIMARY"
+  ],
+  "requiredEvents": [
+    "ACT_COMPLETED"
+  ],
+  "verificationMode": "GROUP_CONFIRMED",
+  "compatibilityTags": [
+    "PERFORMANCE"
+  ],
+  "score": 100,
+  "hiddenProgress": false,
+  "progressRule": {
+    "type": "EVENT_COUNT",
+    "eventType": "ACT_COMPLETED",
+    "actor": "ANY",
+    "target": "ANY",
+    "increment": 1,
+    "requiredCount": 1
+  }
+}

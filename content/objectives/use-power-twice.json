@@ -1,0 +1,29 @@
+{
+  "code": "use-power-twice",
+  "name": "Abus de pouvoir",
+  "description": "Utiliser votre pouvoir deux fois pendant la partie.",
+  "category": "POWER",
+  "difficulty": "MEDIUM",
+  "minimumPlayers": 2,
+  "maximumPlayers": 4,
+  "allowedTypes": [
+    "SECONDARY"
+  ],
+  "requiredEvents": [
+    "POWER_USED"
+  ],
+  "verificationMode": "DISCORD",
+  "compatibilityTags": [
+    "POWER"
+  ],
+  "score": 100,
+  "hiddenProgress": false,
+  "progressRule": {
+    "type": "EVENT_COUNT",
+    "eventType": "POWER_USED",
+    "actor": "OWNER",
+    "target": "ANY",
+    "increment": 1,
+    "requiredCount": 2
+  }
+}
