@@ -212,7 +212,7 @@ describe("Content validation", () => {
         ).toEqual([
             "cause-two-curses",
             "complete-one-act",
-            "use-power-twice",
+            "defeat-one-boss",
         ]);
     });
 
