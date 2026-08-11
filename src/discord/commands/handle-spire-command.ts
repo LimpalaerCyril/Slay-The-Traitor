@@ -24,6 +24,10 @@ import {
     createGameRevealContent,
 } from "../presenters/game-reveal-presenter.js";
 
+import {
+    randomUUID,
+} from "node:crypto";
+
 export async function handleSpireCommand(
     interaction:
         ChatInputCommandInteraction,
@@ -99,6 +103,9 @@ async function handleCreate(
     const gameId =
         interaction.id;
 
+    const gameSeed =
+        randomUUID();
+
     const game =
         await gameService.createGame({
             gameId,
@@ -113,7 +120,7 @@ async function handleCreate(
                 interaction.user.id,
 
             seed:
-                interaction.id,
+                gameSeed,
         });
 
     await interaction.reply({

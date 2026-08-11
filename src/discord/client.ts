@@ -41,6 +41,16 @@ export function createDiscordClient(
       ],
     });
 
+  client.on(
+    Events.Error,
+    error => {
+      console.error(
+        "Erreur du client Discord :",
+        error,
+      );
+    },
+  );
+
   client.once(
     Events.ClientReady,
     readyClient => {
@@ -118,58 +128,48 @@ export function createDiscordClient(
           error,
         );
 
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Une erreur inconnue est survenue.";
-
         if (
           !interaction.isRepliable()
         ) {
           return;
         }
 
-        if (
-          interaction.deferred
-          && !interaction.replied
-        ) {
-          await interaction.editReply({
-            content:
-              `❌ ${message}`,
-          });
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Une erreur inattendue est survenue.";
 
-          return;
-        }
+        try {
+          if (
+            interaction.deferred
+            || interaction.replied
+          ) {
+            await interaction.followUp({
+              content:
+                `❌ ${message}`,
 
-        if (
-          interaction.replied
-        ) {
-          await interaction.followUp({
+              flags:
+                MessageFlags.Ephemeral,
+            });
+
+            return;
+          }
+
+          await interaction.reply({
             content:
               `❌ ${message}`,
 
             flags:
               MessageFlags.Ephemeral,
           });
-
-          return;
+        } catch (
+        responseError
+        ) {
+          console.error(
+            "Impossible d'envoyer la réponse d'erreur Discord :",
+            responseError,
+          );
         }
-
-        await interaction.reply({
-          content:
-            `❌ ${message}`,
-
-          flags:
-            MessageFlags.Ephemeral,
-        });
-
-        await interaction.reply({
-          content:
-            `❌ ${message}`,
-
-          flags:
-            MessageFlags.Ephemeral,
-        });
       }
     },
   );

@@ -399,7 +399,7 @@ export class GameService {
         const roleAssignments =
             assignRoles({
                 seed:
-                    `${session.seed}:roles`,
+                    session.seed,
 
                 players,
 
