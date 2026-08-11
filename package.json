@@ -1,49 +1,62 @@
 {
-  "name": "slay-the-traitor",
-  "version": "0.1.0",
-  "description": "Discord social deduction game mode for cooperative Slay the Spire 2 sessions.",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "bot": "tsx src/app/bootstrap.ts",
-    "start": "tsx src/app/bootstrap.ts",
-    "discord:deploy": "tsx src/discord/deploy-commands.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test"
-  },
-  "keywords": [
-    "discord",
-    "discord-bot",
-    "slay-the-spire-2",
-    "social-deduction",
-    "typescript",
-    "game"
-  ],
-  "author": {
-    "name": "Cyril Limpalaer"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/LimpalaerCyril/Slay-The-Traitor.git"
-  },
-  "bugs": {
-    "url": "https://github.com/LimpalaerCyril/Slay-The-Traitor/issues"
-  },
-  "homepage": "https://github.com/LimpalaerCyril/Slay-The-Traitor#readme",
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.2.0",
-    "tsx": "^4.23.12",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
-  },
-  "dependencies": {
-    "discord.js": "^14.27.0",
-    "zod": "^4.4.3"
-  }
+    "name": "slay-the-traitor",
+    "version": "0.1.0",
+    "description": "Discord social deduction game mode for cooperative Slay the Spire 2 sessions.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "bot": "tsx src/app/bootstrap.ts",
+        "start": "tsx src/app/bootstrap.ts",
+        "discord:deploy": "tsx src/discord/deploy-commands.ts",
+        "db:up": "docker compose up -d",
+        "db:down": "docker compose down",
+        "db:logs": "docker compose logs -f postgres",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:check": "drizzle-kit check",
+        "db:studio": "drizzle-kit studio",
+        "db:ping": "tsx src/infrastructure/database/check-database.ts",
+        "db:repository-check": "tsx src/infrastructure/database/check-game-repository.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc --noEmit",
+        "check": "npm run typecheck && npm test"
+    },
+    "keywords": [
+        "discord",
+        "discord-bot",
+        "slay-the-spire-2",
+        "social-deduction",
+        "typescript",
+        "game"
+    ],
+    "author": {
+        "name": "Cyril Limpalaer"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/LimpalaerCyril/Slay-The-Traitor.git"
+    },
+    "bugs": {
+        "url": "https://github.com/LimpalaerCyril/Slay-The-Traitor/issues"
+    },
+    "homepage": "https://github.com/LimpalaerCyril/Slay-The-Traitor#readme",
+    "engines": {
+        "node": ">=24.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^26.2.0",
+        "@types/pg": "^8.21.0",
+        "drizzle-kit": "^0.31.10",
+        "tsx": "^4.23.12",
+        "typescript": "^7.0.2",
+        "vitest": "^4.1.10"
+    },
+    "dependencies": {
+        "discord.js": "^14.27.0",
+        "drizzle-orm": "^0.45.2",
+        "pg": "^8.23.0",
+        "zod": "^4.4.3"
+    }
 }
