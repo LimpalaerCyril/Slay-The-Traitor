@@ -64,41 +64,39 @@ export async function handleCharacterSelect(
     }
 
     const currentGame =
-        gameService.getGameSnapshot(
-            parsed.gameId,
-        );
+        await gameService
+            .getGameSnapshot(
+                parsed.gameId,
+            );
 
     const alreadyJoined =
         currentGame.players.some(
-            player =>
+            (player) =>
                 player.discordUserId
                 === interaction.user.id,
         );
 
     const game =
         alreadyJoined
-            ? gameService.changeCharacter(
-                parsed.gameId,
-                interaction.user.id,
-                characterSlug,
-            )
-            : gameService.joinGame({
-                gameId:
+            ? await gameService
+                .changeCharacter(
                     parsed.gameId,
-
-                /*
-                 * Avant PostgreSQL, l'ID Discord
-                 * est suffisamment stable comme
-                 * identifiant de joueur.
-                 */
-                playerId:
                     interaction.user.id,
+                    characterSlug,
+                )
+            : await gameService
+                .joinGame({
+                    gameId:
+                        parsed.gameId,
 
-                discordUserId:
-                    interaction.user.id,
+                    playerId:
+                        interaction.user.id,
 
-                characterSlug,
-            });
+                    discordUserId:
+                        interaction.user.id,
+
+                    characterSlug,
+                });
 
     const character =
         gameService.getCharacter(

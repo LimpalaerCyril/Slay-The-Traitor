@@ -24,12 +24,28 @@ import {
 
 import {
   loadConfig,
+  loadDatabaseConfig,
 } from "./config.js";
+
+import {
+  sql,
+} from "drizzle-orm";
+
+import {
+  createDatabase,
+} from "../infrastructure/database/database.js";
+
+import {
+  PostgresGameRepository,
+} from "../infrastructure/database/postgres-game-repository.js";
 
 loadEnvFile();
 
 const config =
   loadConfig();
+
+const databaseConfig =
+  loadDatabaseConfig();
 
 const contentRoot =
   join(
@@ -96,19 +112,99 @@ console.log(
   ].join(" "),
 );
 
+console.log(
+  "Connexion à PostgreSQL...",
+);
+
+const {
+  db,
+  pool,
+} =
+  createDatabase(
+    databaseConfig.DATABASE_URL,
+  );
+
+await db.execute(
+  sql`
+    select 1
+  `,
+);
+
+console.log(
+  "PostgreSQL connecté.",
+);
+
+const gameRepository =
+  new PostgresGameRepository(
+    db,
+  );
+
 const gameService =
-  new GameService({
-    characters,
-    roles,
-    objectives,
-    compatibilityRules,
-    contradictionBudget,
-  });
+  new GameService(
+    {
+      characters,
+      roles,
+      objectives,
+      compatibilityRules,
+      contradictionBudget,
+    },
+
+    gameRepository,
+  );
 
 const discordClient =
   createDiscordClient({
     gameService,
   });
+
+let shuttingDown =
+  false;
+
+async function shutdown(
+  signal: string,
+): Promise<void> {
+  if (
+    shuttingDown
+  ) {
+    return;
+  }
+
+  shuttingDown =
+    true;
+
+  console.log(
+    `Arrêt demandé (${signal})...`,
+  );
+
+  discordClient.destroy();
+
+  await pool.end();
+
+  console.log(
+    "Slay the Traitor arrêté proprement.",
+  );
+
+  process.exitCode =
+    0;
+}
+
+process.once(
+  "SIGINT",
+  () => {
+    void shutdown(
+      "SIGINT",
+    );
+  },
+);
+
+process.once(
+  "SIGTERM",
+  () => {
+    void shutdown(
+      "SIGTERM",
+    );
+  },
+);
 
 console.log(
   "Connexion à Discord...",
