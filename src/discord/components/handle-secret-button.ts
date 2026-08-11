@@ -36,10 +36,11 @@ export async function handleSecretButton(
   }
 
   const secrets =
-    gameService.getMySecrets(
-      parsed.gameId,
-      interaction.user.id,
-    );
+    await gameService
+      .getMySecrets(
+        parsed.gameId,
+        interaction.user.id,
+      );
 
   await interaction.reply({
     content:

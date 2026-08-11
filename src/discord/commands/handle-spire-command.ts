@@ -4,8 +4,8 @@ import {
 } from "discord.js";
 
 import type {
-  GameService,
-  GameSnapshot,
+    GameService,
+    GameSnapshot,
 } from "../../application/game-service/game-service.js";
 
 import {
@@ -100,7 +100,7 @@ async function handleCreate(
         interaction.id;
 
     const game =
-        gameService.createGame({
+        await gameService.createGame({
             gameId,
 
             guildId:
@@ -112,11 +112,6 @@ async function handleCreate(
             hostDiscordUserId:
                 interaction.user.id,
 
-            /*
-             * Pour le MVP, utiliser l'interaction
-             * comme seed rend la partie
-             * reproductible.
-             */
             seed:
                 interaction.id,
         });
@@ -137,10 +132,11 @@ async function handleCreate(
     const lobbyMessage =
         await interaction.fetchReply();
 
-    gameService.registerLobbyMessage(
-        game.id,
-        lobbyMessage.id,
-    );
+    await gameService
+        .registerLobbyMessage(
+            game.id,
+            lobbyMessage.id,
+        );
 }
 
 async function handleMe(
@@ -159,17 +155,18 @@ async function handleMe(
         );
 
     const game =
-        gameService
+        await gameService
             .getCurrentGameByChannel(
                 guildId,
                 channelId,
             );
 
     const secrets =
-        gameService.getMySecrets(
-            game.id,
-            interaction.user.id,
-        );
+        await gameService
+            .getMySecrets(
+                game.id,
+                interaction.user.id,
+            );
 
     await interaction.reply({
         content:
@@ -203,17 +200,18 @@ async function handleCancel(
         );
 
     const currentGame =
-        gameService
+        await gameService
             .getCurrentGameByChannel(
                 guildId,
                 channelId,
             );
 
     const cancelledGame =
-        gameService.cancelGame(
-            currentGame.id,
-            interaction.user.id,
-        );
+        await gameService
+            .cancelGame(
+                currentGame.id,
+                interaction.user.id,
+            );
 
     await refreshGameMessage(
         interaction,
@@ -248,22 +246,24 @@ async function handleFinish(
         );
 
     const currentGame =
-        gameService
+        await gameService
             .getCurrentGameByChannel(
                 guildId,
                 channelId,
             );
 
     const finishedGame =
-        gameService.finishGame(
-            currentGame.id,
-            interaction.user.id,
-        );
+        await gameService
+            .finishGame(
+                currentGame.id,
+                interaction.user.id,
+            );
 
     const reveal =
-        gameService.getGameReveal(
-            finishedGame.id,
-        );
+        await gameService
+            .getGameReveal(
+                finishedGame.id,
+            );
 
     await refreshGameMessage(
         interaction,
@@ -375,8 +375,9 @@ async function refreshGameMessage(
             messageOptions,
         );
 
-    gameService.registerLobbyMessage(
-        game.id,
-        replacementMessage.id,
-    );
+    await gameService
+        .registerLobbyMessage(
+            game.id,
+            replacementMessage.id,
+        );
 }

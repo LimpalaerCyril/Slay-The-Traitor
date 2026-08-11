@@ -479,7 +479,7 @@ describe(
 
                 expect(
                     secrets.objectives.some(
-                        (                        entry: { assignment: { objectiveType: string; }; }) =>
+                        (entry) =>
                             entry.assignment
                                 .objectiveType
                             === "PRIMARY",
@@ -490,7 +490,7 @@ describe(
 
                 expect(
                     secrets.objectives.some(
-                        (                        entry: { assignment: { objectiveType: string; }; }) =>
+                        (entry) =>
                             entry.assignment
                                 .objectiveType
                             === "SECONDARY",
@@ -631,12 +631,12 @@ describe(
 
                 expect(
                     firstSecrets.objectives.map(
-                        (                        entry: { objective: { code: any; }; }) =>
+                        (entry) =>
                             entry.objective.code,
                     ),
                 ).toEqual(
                     secondSecrets.objectives.map(
-                        (entry: { objective: { code: any; }; }) =>
+                        (entry) =>
                             entry.objective.code,
                     ),
                 );
@@ -791,7 +791,7 @@ describe(
 
                 expect(
                     game.players.every(
-                        (player: { characterSlug: string; }) =>
+                        (player) =>
                             player.characterSlug
                             === character.slug,
                     ),
@@ -999,7 +999,7 @@ describe(
 
                 expect(
                     reveal.every(
-                        (entry: { secrets: { objectives: string | any[]; }; }) =>
+                        (entry) =>
                             entry.secrets
                                 .objectives
                                 .length === 2,

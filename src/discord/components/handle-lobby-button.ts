@@ -118,7 +118,7 @@ async function handleLeave(
     gameId: string,
 ): Promise<void> {
     const game =
-        gameService.leaveGame(
+        await gameService.leaveGame(
             gameId,
             interaction.user.id,
         );
@@ -147,7 +147,7 @@ async function handlePrepare(
     gameId: string,
 ): Promise<void> {
     const game =
-        gameService.prepareGame(
+        await gameService.prepareGame(
             gameId,
             interaction.user.id,
         );
@@ -176,7 +176,7 @@ async function handleStart(
     gameId: string,
 ): Promise<void> {
     const game =
-        gameService.startGame(
+        await gameService.startGame(
             gameId,
             interaction.user.id,
         );
