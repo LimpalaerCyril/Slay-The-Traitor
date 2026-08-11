@@ -565,6 +565,17 @@ describe(
                     ),
                 );
 
+            const character =
+                characters[0];
+
+            if (
+                character === undefined
+            ) {
+                throw new Error(
+                    "At least one character is required to run the real-content integration test.",
+                );
+            }
+
             const roles =
                 await loadRoles(
                     join(
@@ -640,7 +651,7 @@ describe(
                     "discord-alice",
 
                 characterSlug:
-                    "character-alpha",
+                    character.slug,
             });
 
             service.joinGame({
@@ -654,7 +665,7 @@ describe(
                     "discord-bob",
 
                 characterSlug:
-                    "character-beta",
+                    character.slug,
             });
 
             service.prepareGame(

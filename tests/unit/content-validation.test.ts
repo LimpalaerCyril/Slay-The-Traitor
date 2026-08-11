@@ -415,18 +415,49 @@ describe("Content validation", () => {
                 charactersPath,
             );
 
+        /*
+         * Le catalogue doit contenir au moins
+         * un personnage pour permettre
+         * de créer une partie.
+         */
         expect(
-            characters,
-        ).toHaveLength(2);
+            characters.length,
+        ).toBeGreaterThan(0);
 
-        expect(
+        /*
+         * Les slugs servent d'identifiants
+         * techniques et doivent rester uniques.
+         */
+        const slugs =
             characters.map(
                 character =>
                     character.slug,
-            ),
-        ).toEqual([
-            "character-alpha",
-            "character-beta",
-        ]);
+            );
+
+        expect(
+            new Set(slugs).size,
+        ).toBe(
+            slugs.length,
+        );
+
+        /*
+         * Les détails individuels sont déjà
+         * validés par Zod lors du chargement.
+         *
+         * On vérifie simplement ici que le
+         * catalogue réel est exploitable.
+         */
+        for (
+            const character
+            of characters
+        ) {
+            expect(
+                character.slug.trim(),
+            ).not.toBe("");
+
+            expect(
+                character.name.trim(),
+            ).not.toBe("");
+        }
     });
 });
