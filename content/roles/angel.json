@@ -1,11 +1,9 @@
 {
   "code": "angel",
   "name": "L'Ange",
-  "description": "Vous suivez vos propres intérêt, pour le bien de l'expédition, ou pas forcémenet...",
-  "alignment": "SOLO",
-  "tags": [
-    "IDK"
-  ],
+  "description": "Vous suivez vos propres intérêt, pour le bien de l'expédition, ou pas forcément...",
+  "alignment": "SELFISH",
+  "tags": [],
   "minimumPlayers": 2,
   "maximumPlayers": 4
 }

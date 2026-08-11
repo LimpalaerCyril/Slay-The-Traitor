@@ -36,6 +36,14 @@ import {
     parseCharacterDefinition,
 } from "../../src/infrastructure/content/schemas/character-schema.js";
 
+import {
+    isRoleAvailableForPlayerCount,
+} from "../../src/domain/roles/role.js";
+
+import {
+    isObjectiveAvailableForPlayerCount,
+} from "../../src/domain/objectives/objective.js";
+
 describe("Content validation", () => {
     it("accepts a valid role", () => {
         const role = parseRoleDefinition({
@@ -170,7 +178,7 @@ describe("Content validation", () => {
         }).toThrow();
     });
 
-    it("loads the real role and objective content", async () => {
+    it("loads valid real role and objective content", async () => {
         const rolesPath = join(
             process.cwd(),
             "content",
@@ -193,27 +201,138 @@ describe("Content validation", () => {
                 objectivesPath,
             );
 
-        expect(roles).toHaveLength(4);
-        expect(objectives).toHaveLength(3);
+        expect(
+            roles.length,
+        ).toBeGreaterThan(0);
 
         expect(
-            roles.map(role => role.code),
-        ).toEqual([
-            "guardian",
-            "miser",
-            "oracle",
-            "traitor",
-        ]);
+            objectives.length,
+        ).toBeGreaterThan(0);
+
+        const roleCodes =
+            roles.map(
+                role => role.code,
+            );
 
         expect(
+            new Set(roleCodes).size,
+        ).toBe(
+            roleCodes.length,
+        );
+
+        const objectiveCodes =
             objectives.map(
                 objective => objective.code,
-            ),
-        ).toEqual([
-            "cause-two-curses",
-            "complete-one-act",
-            "use-power-twice",
-        ]);
+            );
+
+        expect(
+            new Set(objectiveCodes).size,
+        ).toBe(
+            objectiveCodes.length,
+        );
+
+        for (
+            const role
+            of roles
+        ) {
+            expect(
+                role.code.trim(),
+            ).not.toBe("");
+
+            expect(
+                role.name.trim(),
+            ).not.toBe("");
+
+            expect(
+                role.minimumPlayers,
+            ).toBeLessThanOrEqual(
+                role.maximumPlayers,
+            );
+        }
+
+        for (
+            const objective
+            of objectives
+        ) {
+            expect(
+                objective.code.trim(),
+            ).not.toBe("");
+
+            expect(
+                objective.name.trim(),
+            ).not.toBe("");
+
+            expect(
+                objective.minimumPlayers,
+            ).toBeLessThanOrEqual(
+                objective.maximumPlayers,
+            );
+
+            expect(
+                objective.allowedTypes.length,
+            ).toBeGreaterThan(0);
+        }
+
+        for (
+            const playerCount
+            of [2, 3, 4] as const
+        ) {
+            const availableRoles =
+                roles.filter(
+                    role =>
+                        isRoleAvailableForPlayerCount(
+                            role,
+                            playerCount,
+                        ),
+                );
+
+            expect(
+                availableRoles.length,
+                `Not enough roles are available for ${playerCount} players.`,
+            ).toBeGreaterThanOrEqual(
+                playerCount,
+            );
+        }
+
+        for (
+            const playerCount
+            of [2, 3, 4] as const
+        ) {
+            const availableObjectives =
+                objectives.filter(
+                    objective =>
+                        isObjectiveAvailableForPlayerCount(
+                            objective,
+                            playerCount,
+                        ),
+                );
+
+            const primaryObjectives =
+                availableObjectives.filter(
+                    objective =>
+                        objective.allowedTypes.includes(
+                            "PRIMARY",
+                        ),
+                );
+
+            const secondaryObjectives =
+                availableObjectives.filter(
+                    objective =>
+                        objective.allowedTypes.includes(
+                            "SECONDARY",
+                        ),
+                );
+
+            expect(
+                primaryObjectives.length,
+                `No primary objective is available for ${playerCount} players.`,
+            ).toBeGreaterThan(0);
+
+            expect(
+                secondaryObjectives.length,
+                `No secondary objective is available for ${playerCount} players.`,
+            ).toBeGreaterThan(0);
+        }
     });
 
     it("accepts valid compatibility rules", () => {
@@ -415,18 +534,49 @@ describe("Content validation", () => {
                 charactersPath,
             );
 
+        /*
+         * Le catalogue doit contenir au moins
+         * un personnage pour permettre
+         * de créer une partie.
+         */
         expect(
-            characters,
-        ).toHaveLength(2);
+            characters.length,
+        ).toBeGreaterThan(0);
 
-        expect(
+        /*
+         * Les slugs servent d'identifiants
+         * techniques et doivent rester uniques.
+         */
+        const slugs =
             characters.map(
                 character =>
                     character.slug,
-            ),
-        ).toEqual([
-            "character-alpha",
-            "character-beta",
-        ]);
+            );
+
+        expect(
+            new Set(slugs).size,
+        ).toBe(
+            slugs.length,
+        );
+
+        /*
+         * Les détails individuels sont déjà
+         * validés par Zod lors du chargement.
+         *
+         * On vérifie simplement ici que le
+         * catalogue réel est exploitable.
+         */
+        for (
+            const character
+            of characters
+        ) {
+            expect(
+                character.slug.trim(),
+            ).not.toBe("");
+
+            expect(
+                character.name.trim(),
+            ).not.toBe("");
+        }
     });
 });

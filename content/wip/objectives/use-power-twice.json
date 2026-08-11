@@ -16,7 +16,7 @@
   "compatibilityTags": [
     "POWER"
   ],
-  "score": 100,
+  "score": 35,
   "hiddenProgress": false,
   "progressRule": {
     "type": "EVENT_COUNT",

@@ -1,26 +1,26 @@
 {
-    "code": "complete-one-act",
-    "name": "Ascension",
-    "description": "Participer à l'achèvement d'au moins un acte.",
+    "code": "defeat-one-boss",
+    "name": "Témoin de la chute",
+    "description": "Voir l'expédition vaincre au moins un boss.",
     "category": "PERFORMANCE",
     "difficulty": "EASY",
     "minimumPlayers": 2,
     "maximumPlayers": 4,
     "allowedTypes": [
-        "PRIMARY"
+        "SECONDARY"
     ],
     "requiredEvents": [
-        "ACT_COMPLETED"
+        "BOSS_DEFEATED"
     ],
     "verificationMode": "GROUP_CONFIRMED",
     "compatibilityTags": [
         "PERFORMANCE"
     ],
-    "score": 100,
+    "score": 35,
     "hiddenProgress": false,
     "progressRule": {
         "type": "EVENT_COUNT",
-        "eventType": "ACT_COMPLETED",
+        "eventType": "BOSS_DEFEATED",
         "actor": "ANY",
         "target": "ANY",
         "increment": 1,

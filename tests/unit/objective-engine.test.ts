@@ -4,28 +4,34 @@ import { processObjectiveEvent } from "../../src/application/objective-engine/ob
 
 import type { GameEvent } from "../../src/domain/events/game-events.js";
 
-import type {
-    ObjectiveAssignment,
+import {
+    createObjectiveAssignment,
+    type ObjectiveAssignment,
 } from "../../src/domain/objectives/objective-assignments.js";
 
 import type {
     Objective,
 } from "../../src/domain/objectives/objective.js";
 
-function createCurseObjective(): Objective {
+function createTestCurseObjective(): Objective {
     return {
-        code: "cause-two-curses",
-        name: "Influence corruptrice",
+        code: "test-curse-objective",
+
+        name:
+            "Test curse objective",
 
         description:
-            "Provoquer l'acquisition de deux malédictions par d'autres joueurs.",
+            "Test objective used by the Objective Engine.",
 
-        category: "SABOTAGE",
-        difficulty: "HARD",
+        category:
+            "TEST",
 
-        minimumPlayers: 3,
+        difficulty:
+            "HARD",
+
+        minimumPlayers: 2,
         maximumPlayers: 4,
-        
+
         allowedTypes: [
             "PRIMARY",
         ],
@@ -34,23 +40,26 @@ function createCurseObjective(): Objective {
             "CURSE_ADDED",
         ],
 
-        verificationMode: "GROUP_CONFIRMED",
+        verificationMode:
+            "GROUP_CONFIRMED",
 
-        compatibilityTags: [
-            "SABOTAGE",
-            "REQUIRES_CURSE",
-        ],
+        compatibilityTags: [],
 
         score: 100,
         hiddenProgress: false,
 
         progressRule: {
-            type: "EVENT_COUNT",
+            type:
+                "EVENT_COUNT",
 
-            eventType: "CURSE_ADDED",
+            eventType:
+                "CURSE_ADDED",
 
-            actor: "OWNER",
-            target: "OTHER",
+            actor:
+                "OWNER",
+
+            target:
+                "OTHER",
 
             requiredCount: 2,
             increment: 1,
@@ -58,20 +67,14 @@ function createCurseObjective(): Objective {
     };
 }
 
-function createAssignment(): ObjectiveAssignment {
-    return {
-        playerId: "alice",
-
-        objectiveCode: "cause-two-curses",
-        objectiveType: "PRIMARY",
-
-        progress: {
-            current: 0,
-            target: 2,
-        },
-
-        status: "PENDING",
-    };
+function createAssignment(
+    objective: Objective,
+): ObjectiveAssignment {
+    return createObjectiveAssignment(
+        "alice",
+        objective,
+        "PRIMARY",
+    );
 }
 
 function createCurseEvent(
@@ -103,8 +106,13 @@ function createCurseEvent(
 
 describe("ObjectiveEngine", () => {
     it("progresses an objective from a matching verified event", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         const event = createCurseEvent(
             "alice",
@@ -129,8 +137,13 @@ describe("ObjectiveEngine", () => {
     });
 
     it("completes the objective when the target is reached", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         processObjectiveEvent({
             objective,
@@ -159,9 +172,14 @@ describe("ObjectiveEngine", () => {
         ).toBe("COMPLETED");
     });
 
-    it("ignores a pending event", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        it("ignores a pending event", () => {
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         const event = createCurseEvent(
             "alice",
@@ -183,8 +201,13 @@ describe("ObjectiveEngine", () => {
     });
 
     it("ignores an event caused by another player", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         const event = createCurseEvent(
             "bob",
@@ -205,8 +228,13 @@ describe("ObjectiveEngine", () => {
     });
 
     it("ignores an event targeting the objective owner", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         const event = createCurseEvent(
             "alice",
@@ -227,8 +255,13 @@ describe("ObjectiveEngine", () => {
     });
 
     it("ignores an unrelated event type", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         const event: GameEvent = {
             id: "event-2",
@@ -265,8 +298,13 @@ describe("ObjectiveEngine", () => {
     });
 
     it("does not progress an already completed objective", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+        const objective =
+            createTestCurseObjective();
+
+        const assignment =
+            createAssignment(
+                objective,
+            );
 
         assignment.progress = {
             current: 2,
@@ -292,9 +330,12 @@ describe("ObjectiveEngine", () => {
     });
 
     it("rejects an assignment for another objective", () => {
-        const objective = createCurseObjective();
+        const objective =
+            createTestCurseObjective();
         const assignment: ObjectiveAssignment = {
-            ...createAssignment(),
+            ...createAssignment(
+                objective,
+            ),
             objectiveCode: "another-objective",
         };
 
