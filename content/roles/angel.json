@@ -1,0 +1,11 @@
+{
+  "code": "angel",
+  "name": "L'Ange",
+  "description": "Vous suivez vos propres intérêt, pour le bien de l'expédition, ou pas forcémenet...",
+  "alignment": "SOLO",
+  "tags": [
+    "IDK"
+  ],
+  "minimumPlayers": 2,
+  "maximumPlayers": 4
+}
