@@ -3,9 +3,7 @@
   "name": "Cupidon",
   "description": "Vous agissez pour le bien de l'expédition, mais rien n'empêche de répendre l'amour ...",
   "alignment": "LOYAL",
-  "tags": [
-    "IDK"
-  ],
+  "tags": [],
   "minimumPlayers": 2,
   "maximumPlayers": 4
 }
