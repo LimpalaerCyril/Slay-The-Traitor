@@ -8,7 +8,7 @@ function getStatusLabel(
     PlayerObjectiveSecret,
 ): string {
   switch (
-    secret.assignment.status
+  secret.assignment.status
   ) {
     case "PENDING":
       return "Non accompli";
@@ -61,15 +61,40 @@ export function createGameRevealContent(
             ? "Inconnu"
             : `${secondary.objective.name} — ${getStatusLabel(secondary)}`;
 
+        const variant =
+          entry.secrets.role.variants
+            ?.find(
+              candidate =>
+                candidate.code
+                === entry.secrets
+                  .roleAssignment
+                  .variantCode,
+            );
+
+        const roleText =
+          variant === undefined
+            ? entry.secrets.role.name
+            : `${entry.secrets.role.name} — ${variant.name}`;
+
+        const powerText =
+          entry.secrets.power === undefined
+            ? "Aucun"
+            : entry.secrets.power
+              .power
+              .name;
+
         return [
           `### <@${entry.player.discordUserId}>`,
-          `🎭 **${entry.secrets.role.name}**`,
+          `🎭 **${roleText}**`,
+          `⚡ Pouvoir : **${powerText}**`,
           `🎯 ${primaryText}`,
-          `✨ ${secondaryText}`,
-        ].join("\n");
+          `📜 ${secondaryText}`,
+        ].join(
+          "\n",
+        );
       },
     )
-    .join("\n\n");
+      .join("\n\n");
 
   return [
     "## 🕯️ Révélation",

@@ -1,11 +1,12 @@
 {
-  "code": "oracle",
-  "name": "L'Oracle",
-  "description": "Vous cherchez à comprendre les intentions cachées de vos compagnons.",
-  "alignment": "CHAOTIC",
-  "tags": [
-    "INFORMATION"
-  ],
-  "minimumPlayers": 2,
-  "maximumPlayers": 4
+    "code": "oracle",
+    "name": "L'Oracle",
+    "description": "Vous cherchez à comprendre les intentions cachées de vos compagnons.",
+    "alignment": "CHAOTIC",
+    "tags": [
+        "INFORMATION"
+    ],
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "primaryObjectiveCode": "complete-one-act"
 }

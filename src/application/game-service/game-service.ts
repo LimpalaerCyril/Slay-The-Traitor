@@ -2,10 +2,6 @@ import type {
     Character,
 } from "../../domain/characters/character.js";
 
-import {
-    Game,
-} from "../../domain/games/game.js";
-
 import type {
     GamePlayer,
 } from "../../domain/games/game-player.js";
@@ -13,6 +9,14 @@ import type {
 import type {
     GameState,
 } from "../../domain/games/game-state.js";
+
+import type {
+    GameTrackingMode,
+} from "../../domain/games/game-tracking-mode.js";
+
+import type {
+    GameAct,
+} from "../../domain/games/game-act.js";
 
 import type {
     ContradictionBudget,
@@ -39,33 +43,50 @@ import type {
 } from "../../domain/roles/role.js";
 
 import type {
+    Power,
+} from "../../domain/powers/power.js";
+
+import type {
     GameRepository,
     GameSession,
 } from "../game-repository/game-repository.js";
 
+import type {
+    PowerAssignment,
+} from "../../domain/powers/power-assignment.js";
+
 import {
-    generateObjectiveComposition,
-} from "../objective-assignment/objective-composition-engine.js";
+    Game,
+} from "../../domain/games/game.js";
+
+import {
+    assignPrimaryObjectives,
+} from "../objective-assignment/primary-objective-assignment-engine.js";
+
+import {
+    assignSecondaryObjectives,
+} from "../objective-assignment/secondary-objective-assignment-engine.js";
 
 import {
     assignRoles,
 } from "../role-assignment/role-assignment-engine.js";
 
+import {
+    assignPowerAssignments,
+} from "../power-engine/assign-power-assignments.js";
+
 export interface GameServiceContent {
-    readonly characters:
-    readonly Character[];
+    readonly characters: readonly Character[];
 
-    readonly roles:
-    readonly Role[];
+    readonly roles: readonly Role[];
 
-    readonly objectives:
-    readonly Objective[];
+    readonly powers: readonly Power[];
 
-    readonly compatibilityRules:
-    readonly ObjectiveCompatibilityRule[];
+    readonly objectives: readonly Objective[];
 
-    readonly contradictionBudget:
-    ContradictionBudget;
+    readonly compatibilityRules: readonly ObjectiveCompatibilityRule[];
+
+    readonly contradictionBudget: ContradictionBudget;
 }
 
 export interface CreateGameInput {
@@ -73,13 +94,13 @@ export interface CreateGameInput {
     readonly guildId: string;
     readonly textChannelId: string;
 
-    readonly voiceChannelId?:
-    string;
+    readonly voiceChannelId?: string;
 
-    readonly hostDiscordUserId:
-    string;
+    readonly hostDiscordUserId: string;
 
     readonly seed: string;
+
+    readonly trackingMode?: GameTrackingMode;
 }
 
 export interface JoinGameInput {
@@ -87,59 +108,132 @@ export interface JoinGameInput {
 
     readonly playerId: string;
 
-    readonly discordUserId:
-    string;
+    readonly discordUserId: string;
 
-    readonly characterSlug:
-    string;
+    readonly characterSlug: string;
 }
 
 export interface GameSnapshot {
     readonly id: string;
 
     readonly guildId: string;
+
     readonly textChannelId: string;
 
-    readonly voiceChannelId:
-    string | undefined;
+    readonly voiceChannelId: string | undefined;
 
-    readonly lobbyMessageId:
-    string | undefined;
+    readonly lobbyMessageId: string | undefined;
 
-    readonly hostDiscordUserId:
-    string;
+    readonly hostDiscordUserId: string;
 
     readonly seed: string;
 
-    readonly state:
-    GameState;
+    readonly trackingMode: GameTrackingMode;
 
-    readonly players:
-    readonly GamePlayer[];
+    readonly state: GameState;
 
-    readonly contradiction:
-    number | undefined;
+    readonly currentAct: GameAct | undefined;
+
+    readonly players: readonly GamePlayer[];
+
+    readonly contradiction: number | undefined;
+}
+
+export interface RoleSetupTargetSnapshot {
+    readonly playerId: string;
+
+    readonly discordUserId: string;
+
+    readonly characterSlug: string;
+}
+
+export interface RoleSetupVariantSnapshot {
+    readonly code: string;
+
+    readonly name: string;
+
+    readonly description: string;
+
+    readonly targetSelection:
+    {
+        readonly count: number;
+
+        readonly allowSelf: boolean;
+    } | undefined;
+}
+
+export interface RoleSetupSnapshot {
+    readonly roleCode: string;
+
+    readonly roleName: string;
+
+    readonly roleDescription: string;
+
+    readonly setupCompleted: boolean;
+
+    readonly selectedVariantCode: string | undefined;
+
+    readonly selectedTargetPlayerIds: readonly string[];
+
+    readonly variants: readonly RoleSetupVariantSnapshot[];
+
+    readonly targets: readonly RoleSetupTargetSnapshot[];
+
+    readonly lovePartners: readonly RoleSetupTargetSnapshot[];
+}
+
+export interface PowerSetupSnapshot {
+    readonly powerCode: string;
+
+    readonly powerName: string;
+
+    readonly powerDescription: string;
+
+    readonly mode: Power["mode"];
+
+    readonly setupCompleted: boolean;
+
+    readonly selectedTargetPlayerIds: readonly string[];
+
+    readonly targetSelection:
+    {
+        readonly count: number;
+
+        readonly allowSelf: boolean;
+    }
+    | undefined;
+
+    readonly targets: readonly RoleSetupTargetSnapshot[];
 }
 
 export interface PlayerObjectiveSecret {
-    readonly assignment:
-    ObjectiveAssignment;
+    readonly assignment: ObjectiveAssignment;
 
-    readonly objective:
-    Objective;
+    readonly objective: Objective;
+}
+
+export interface PlayerPowerSecret {
+    readonly assignment: PowerAssignment;
+
+    readonly power: Power;
+
+    readonly targets: readonly GamePlayer[];
 }
 
 export interface PlayerSecrets {
     readonly playerId: string;
 
-    readonly roleAssignment:
-    RoleAssignment;
+    readonly roleAssignment: RoleAssignment;
 
-    readonly role:
-    Role;
+    readonly role: Role;
 
-    readonly objectives:
-    readonly PlayerObjectiveSecret[];
+    readonly roleTargets: readonly GamePlayer[];
+
+    readonly lovePartners: readonly GamePlayer[];
+
+    readonly power: PlayerPowerSecret | undefined;
+
+    readonly objectives: readonly PlayerObjectiveSecret[];
 }
 
 export interface PlayerReveal {
@@ -248,6 +342,10 @@ export class GameService {
 
             seed:
                 input.seed,
+
+            trackingMode:
+                input.trackingMode
+                ?? "MANUAL",
 
             contradiction:
                 undefined,
@@ -396,6 +494,11 @@ export class GameService {
             );
         }
 
+        const eligibleRoles =
+            this.getEligibleRoles(
+                session.trackingMode,
+            );
+
         const roleAssignments =
             assignRoles({
                 seed:
@@ -404,40 +507,666 @@ export class GameService {
                 players,
 
                 roles:
-                    this.content.roles,
+                    eligibleRoles,
+
+                trackingMode:
+                    session.trackingMode,
             });
 
-        const objectiveComposition =
-            generateObjectiveComposition({
+        const powerAssignments =
+            assignPowerAssignments({
+                roleAssignments,
+
+                roles:
+                    this.content.roles,
+
+                powers:
+                    this.content.powers,
+
+                trackingMode:
+                    session.trackingMode,
+            });
+
+        session.game.beginSetup(
+            roleAssignments,
+            powerAssignments,
+        );
+
+        if (
+            session.game
+                .areSetupsComplete()
+        ) {
+            this.finalizeSetup(
+                session,
+            );
+        }
+
+        await this.repository.save(
+            session,
+        );
+
+        return this.createSnapshot(
+            session,
+        );
+    }
+
+    private finalizeSetup(
+        session:
+            GameSession,
+    ): void {
+        const players =
+            session.game
+                .getPlayers();
+
+        const roleAssignments =
+            players.map(
+                player => {
+                    const assignment =
+                        session.game
+                            .getRoleAssignmentForPlayer(
+                                player.id,
+                            );
+
+                    if (
+                        assignment
+                        === undefined
+                    ) {
+                        throw new Error(
+                            `No role assignment found for player ${player.id}.`,
+                        );
+                    }
+
+                    return assignment;
+                },
+            );
+
+        const primaryAssignments =
+            assignPrimaryObjectives({
+                players,
+
+                roleAssignments,
+
+                roles:
+                    this.content.roles,
+
+                objectives:
+                    this.content.objectives,
+
+                trackingMode:
+                    session.trackingMode,
+            });
+
+        const secondaryAssignments =
+            assignSecondaryObjectives({
                 seed:
-                    `${session.seed}:objectives`,
+                    session.seed,
 
                 players,
 
                 objectives:
                     this.content.objectives,
 
-                compatibilityRules:
-                    this.content
-                        .compatibilityRules,
+                actNumber:
+                    1,
 
-                contradictionBudget:
-                    this.content
-                        .contradictionBudget,
+                trackingMode:
+                    session.trackingMode,
             });
 
-        session.game.lockRoster();
-
-        session.game
-            .setSecretAssignments(
-                roleAssignments,
-                objectiveComposition
-                    .assignments,
-            );
+        session.game.completeSetup([
+            ...primaryAssignments,
+            ...secondaryAssignments,
+        ]);
 
         session.contradiction =
-            objectiveComposition
-                .contradiction;
+            undefined;
+    }
+
+    public async getMyRoleSetup(
+        gameId: string,
+        discordUserId: string,
+    ): Promise<RoleSetupSnapshot> {
+        const session =
+            await this.getSession(
+                gameId,
+            );
+
+        if (
+            session.game.state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "This game is not waiting for role setup.",
+            );
+        }
+
+        const player =
+            this.findPlayerByDiscordUserId(
+                session,
+                discordUserId,
+            );
+
+        const assignment =
+            session.game
+                .getRoleAssignmentForPlayer(
+                    player.id,
+                );
+
+        if (
+            assignment === undefined
+        ) {
+            throw new Error(
+                `No role assignment found for player ${player.id}.`,
+            );
+        }
+
+        const role =
+            this.content.roles.find(
+                candidate =>
+                    candidate.code
+                    === assignment.roleCode,
+            );
+
+        if (
+            role === undefined
+        ) {
+            throw new Error(
+                `Unknown role definition: ${assignment.roleCode}`,
+            );
+        }
+
+        return {
+            roleCode:
+                role.code,
+
+            roleName:
+                role.name,
+
+            roleDescription:
+                role.description,
+
+            setupCompleted:
+                assignment.setupCompleted
+                ?? true,
+
+            selectedVariantCode:
+                assignment.variantCode,
+
+            selectedTargetPlayerIds:
+                assignment.targetPlayerIds
+                ?? [],
+
+            variants:
+                (
+                    role.variants
+                    ?? []
+                ).map(
+                    variant => ({
+                        code:
+                            variant.code,
+
+                        name:
+                            variant.name,
+
+                        description:
+                            variant.description,
+
+                        targetSelection:
+                            variant.targetSelection,
+                    }),
+                ),
+
+            targets:
+                session.game
+                    .getPlayers()
+                    .map(
+                        target => ({
+                            playerId:
+                                target.id,
+
+                            discordUserId:
+                                target.discordUserId,
+
+                            characterSlug:
+                                target.characterSlug,
+                        }),
+                    ),
+
+            lovePartners:
+                this.getLovePartners(
+                    session,
+                    player.id,
+                ).map(
+                    partner => ({
+                        playerId:
+                            partner.id,
+
+                        discordUserId:
+                            partner.discordUserId,
+
+                        characterSlug:
+                            partner.characterSlug,
+                    }),
+                ),
+        };
+    }
+
+    public async getMyPowerSetup(
+        gameId: string,
+        discordUserId: string,
+    ): Promise<
+        PowerSetupSnapshot
+        | undefined
+    > {
+        const session =
+            await this.getSession(
+                gameId,
+            );
+
+        if (
+            session.game.state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "This game is not waiting for setup.",
+            );
+        }
+
+        const player =
+            this.findPlayerByDiscordUserId(
+                session,
+                discordUserId,
+            );
+
+        const assignment =
+            session.game
+                .getPowerAssignmentForPlayer(
+                    player.id,
+                );
+
+        /*
+         * Tous les rôles n'ont pas forcément
+         * de pouvoir.
+         */
+        if (
+            assignment === undefined
+        ) {
+            return undefined;
+        }
+
+        const power =
+            this.content.powers.find(
+                candidate =>
+                    candidate.code
+                    === assignment.powerCode,
+            );
+
+        if (
+            power === undefined
+        ) {
+            throw new Error(
+                `Unknown power definition: ${assignment.powerCode}`,
+            );
+        }
+
+        return {
+            powerCode:
+                power.code,
+
+            powerName:
+                power.name,
+
+            powerDescription:
+                power.description,
+
+            mode:
+                power.mode,
+
+            setupCompleted:
+                assignment.setupCompleted,
+
+            selectedTargetPlayerIds: [
+                ...assignment
+                    .targetPlayerIds,
+            ],
+
+            targetSelection:
+                power.setup
+                    ?.targetSelection,
+
+            targets:
+                session.game
+                    .getPlayers()
+                    .map(
+                        target => ({
+                            playerId:
+                                target.id,
+
+                            discordUserId:
+                                target.discordUserId,
+
+                            characterSlug:
+                                target.characterSlug,
+                        }),
+                    ),
+        };
+    }
+
+    public async configureRoleSetup(
+        gameId: string,
+        discordUserId: string,
+        variantCode: string,
+        targetPlayerIds:
+            readonly string[],
+    ): Promise<GameSnapshot> {
+        const session =
+            await this.getSession(
+                gameId,
+            );
+
+        if (
+            session.game.state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "This game is not waiting for role setup.",
+            );
+        }
+
+        const player =
+            this.findPlayerByDiscordUserId(
+                session,
+                discordUserId,
+            );
+
+        const assignment =
+            session.game
+                .getRoleAssignmentForPlayer(
+                    player.id,
+                );
+
+        if (
+            assignment === undefined
+        ) {
+            throw new Error(
+                `No role assignment found for player ${player.id}.`,
+            );
+        }
+
+        const role =
+            this.content.roles.find(
+                candidate =>
+                    candidate.code
+                    === assignment.roleCode,
+            );
+
+        if (
+            role === undefined
+        ) {
+            throw new Error(
+                `Unknown role definition: ${assignment.roleCode}`,
+            );
+        }
+
+        if (
+            role.variants === undefined
+            || role.variants.length === 0
+        ) {
+            throw new Error(
+                `Role ${role.code} does not require variant setup.`,
+            );
+        }
+
+        const variant =
+            role.variants.find(
+                candidate =>
+                    candidate.code
+                    === variantCode,
+            );
+
+        if (
+            variant === undefined
+        ) {
+            throw new Error(
+                `Unknown variant ${variantCode} for role ${role.code}.`,
+            );
+        }
+
+        const targetSelection =
+            variant.targetSelection;
+
+        if (
+            targetSelection === undefined
+        ) {
+            if (
+                targetPlayerIds.length
+                !== 0
+            ) {
+                throw new Error(
+                    "This role variant does not accept targets.",
+                );
+            }
+        } else {
+            if (
+                targetPlayerIds.length
+                !== targetSelection.count
+            ) {
+                throw new Error(
+                    `This role variant requires exactly ${targetSelection.count} target(s).`,
+                );
+            }
+
+            const uniqueTargets =
+                new Set(
+                    targetPlayerIds,
+                );
+
+            if (
+                uniqueTargets.size
+                !== targetPlayerIds.length
+            ) {
+                throw new Error(
+                    "Role setup targets must be unique.",
+                );
+            }
+
+            const players =
+                session.game
+                    .getPlayers();
+
+            for (
+                const targetPlayerId
+                of targetPlayerIds
+            ) {
+                const target =
+                    players.find(
+                        candidate =>
+                            candidate.id
+                            === targetPlayerId,
+                    );
+
+                if (
+                    target === undefined
+                ) {
+                    throw new Error(
+                        `Unknown target player: ${targetPlayerId}`,
+                    );
+                }
+
+                if (
+                    !targetSelection.allowSelf
+                    && target.id
+                    === player.id
+                ) {
+                    throw new Error(
+                        "This role variant cannot target its owner.",
+                    );
+                }
+            }
+        }
+
+        session.game.updateRoleSetup(
+            player.id,
+            variant.code,
+            targetPlayerIds,
+        );
+
+        if (
+            session.game
+                .areSetupsComplete()
+        ) {
+            this.finalizeSetup(
+                session,
+            );
+        }
+
+        await this.repository.save(
+            session,
+        );
+
+        return this.createSnapshot(
+            session,
+        );
+    }
+
+    public async configurePowerSetup(
+        gameId: string,
+        discordUserId: string,
+        targetPlayerIds:
+            readonly string[],
+    ): Promise<GameSnapshot> {
+        const session =
+            await this.getSession(
+                gameId,
+            );
+
+        if (
+            session.game.state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "This game is not waiting for power setup.",
+            );
+        }
+
+        const player =
+            this.findPlayerByDiscordUserId(
+                session,
+                discordUserId,
+            );
+
+        const assignment =
+            session.game
+                .getPowerAssignmentForPlayer(
+                    player.id,
+                );
+
+        if (
+            assignment === undefined
+        ) {
+            throw new Error(
+                "This player has no power assignment.",
+            );
+        }
+
+        const power =
+            this.content.powers.find(
+                candidate =>
+                    candidate.code
+                    === assignment.powerCode,
+            );
+
+        if (
+            power === undefined
+        ) {
+            throw new Error(
+                `Unknown power definition: ${assignment.powerCode}`,
+            );
+        }
+
+        const targetSelection =
+            power.setup
+                ?.targetSelection;
+
+        if (
+            targetSelection
+            === undefined
+        ) {
+            throw new Error(
+                `Power ${power.code} does not require target setup.`,
+            );
+        }
+
+        if (
+            targetPlayerIds.length
+            !== targetSelection.count
+        ) {
+            throw new Error(
+                `This power requires exactly ${targetSelection.count} target(s).`,
+            );
+        }
+
+        const uniqueTargets =
+            new Set(
+                targetPlayerIds,
+            );
+
+        if (
+            uniqueTargets.size
+            !== targetPlayerIds.length
+        ) {
+            throw new Error(
+                "Power setup targets must be unique.",
+            );
+        }
+
+        const players =
+            session.game
+                .getPlayers();
+
+        for (
+            const targetPlayerId
+            of targetPlayerIds
+        ) {
+            const target =
+                players.find(
+                    candidate =>
+                        candidate.id
+                        === targetPlayerId,
+                );
+
+            if (
+                target === undefined
+            ) {
+                throw new Error(
+                    `Unknown target player: ${targetPlayerId}`,
+                );
+            }
+
+            if (
+                !targetSelection.allowSelf
+                && target.id
+                === player.id
+            ) {
+                throw new Error(
+                    "This power cannot target its owner.",
+                );
+            }
+        }
+
+        session.game.updatePowerSetup(
+            player.id,
+            targetPlayerIds,
+        );
+
+        if (
+            session.game
+                .areSetupsComplete()
+        ) {
+            this.finalizeSetup(
+                session,
+            );
+        }
 
         await this.repository.save(
             session,
@@ -601,10 +1330,12 @@ export class GameService {
 
         if (
             session.game.state
+            !== "READY"
+            && session.game.state
             !== "ACTIVE"
         ) {
             throw new Error(
-                "Secrets are only available during an active game.",
+                "Secrets are only available when the game is ready or active.",
             );
         }
 
@@ -700,6 +1431,144 @@ export class GameService {
         return player;
     }
 
+    private getLovePartners(
+        session:
+            GameSession,
+        playerId:
+            string,
+    ): readonly GamePlayer[] {
+        const partnerIds =
+            new Set<string>();
+
+        const powerAssignments =
+            session.game
+                .getPowerAssignments();
+
+        for (
+            const assignment
+            of powerAssignments
+        ) {
+            if (
+                assignment.powerCode
+                !== "lovers-bond"
+            ) {
+                continue;
+            }
+
+            /*
+             * Un lien pas encore configuré
+             * ne produit aucun statut amoureux.
+             */
+            if (
+                !assignment.setupCompleted
+            ) {
+                continue;
+            }
+
+            if (
+                !assignment
+                    .targetPlayerIds
+                    .includes(
+                        playerId,
+                    )
+            ) {
+                continue;
+            }
+
+            for (
+                const targetPlayerId
+                of assignment
+                    .targetPlayerIds
+            ) {
+                if (
+                    targetPlayerId
+                    === playerId
+                ) {
+                    continue;
+                }
+
+                partnerIds.add(
+                    targetPlayerId,
+                );
+            }
+        }
+
+        const players =
+            session.game
+                .getPlayers();
+
+        return [
+            ...partnerIds,
+        ].map(
+            partnerId => {
+                const partner =
+                    players.find(
+                        candidate =>
+                            candidate.id
+                            === partnerId,
+                    );
+
+                if (
+                    partner === undefined
+                ) {
+                    throw new Error(
+                        `Unknown love partner player: ${partnerId}`,
+                    );
+                }
+
+                return {
+                    ...partner,
+                };
+            },
+        );
+    }
+
+    private getEligibleRoles(
+        trackingMode:
+            GameTrackingMode,
+    ): readonly Role[] {
+        return this.content.roles.filter(
+            role => {
+                if (
+                    !role.supportedTrackingModes
+                        .includes(
+                            trackingMode,
+                        )
+                ) {
+                    return false;
+                }
+
+                if (
+                    role.powerCode
+                    === undefined
+                ) {
+                    return true;
+                }
+
+                const power =
+                    this.content.powers.find(
+                        candidate =>
+                            candidate.code
+                            === role.powerCode,
+                    );
+
+                if (
+                    power === undefined
+                ) {
+                    throw new Error(
+                        `Role ${role.code} references unknown power: ${role.powerCode}`,
+                    );
+                }
+
+                return power
+                    .supportedTrackingModes
+                    .includes(
+                        trackingMode,
+                    );
+            },
+        );
+    }
+
     private assertCharacterExists(
         characterSlug: string,
     ): void {
@@ -765,10 +1634,136 @@ export class GameService {
             );
         }
 
+        const players =
+            session.game
+                .getPlayers();
+
+        const lovePartners =
+            this.getLovePartners(
+                session,
+                player.id,
+            );
+
+        const roleTargetIds =
+            roleAssignment
+                .targetPlayerIds
+            ?? [];
+
+        const roleTargets =
+            roleTargetIds.map(
+                targetPlayerId => {
+                    const target =
+                        players.find(
+                            candidate =>
+                                candidate.id
+                                === targetPlayerId,
+                        );
+
+                    if (
+                        target === undefined
+                    ) {
+                        throw new Error(
+                            `Unknown role target player: ${targetPlayerId}`,
+                        );
+                    }
+
+                    return {
+                        ...target,
+                    };
+                },
+            );
+
+        const powerAssignment =
+            session.game
+                .getPowerAssignmentForPlayer(
+                    player.id,
+                );
+
+        let power:
+            PlayerPowerSecret
+            | undefined;
+
+        if (
+            powerAssignment
+            !== undefined
+        ) {
+            const powerDefinition =
+                this.content.powers.find(
+                    candidate =>
+                        candidate.code
+                        === powerAssignment.powerCode,
+                );
+
+            if (
+                powerDefinition === undefined
+            ) {
+                throw new Error(
+                    `Unknown power definition: ${powerAssignment.powerCode}`,
+                );
+            }
+
+            const powerTargets =
+                powerAssignment
+                    .targetPlayerIds
+                    .map(
+                        targetPlayerId => {
+                            const target =
+                                players.find(
+                                    candidate =>
+                                        candidate.id
+                                        === targetPlayerId,
+                                );
+
+                            if (
+                                target === undefined
+                            ) {
+                                throw new Error(
+                                    `Unknown power target player: ${targetPlayerId}`,
+                                );
+                            }
+
+                            return {
+                                ...target,
+                            };
+                        },
+                    );
+
+            power = {
+                assignment: {
+                    ...powerAssignment,
+
+                    targetPlayerIds: [
+                        ...powerAssignment
+                            .targetPlayerIds,
+                    ],
+                },
+
+                power:
+                    powerDefinition,
+
+                targets:
+                    powerTargets,
+            };
+        }
+
+        const currentAct =
+            session.game.currentAct;
+
         const objectiveAssignments =
             session.game
                 .getObjectiveAssignmentsForPlayer(
                     player.id,
+                )
+                .filter(
+                    assignment =>
+                        assignment.objectiveType
+                        === "PRIMARY"
+                        || (
+                            assignment.objectiveType
+                            === "SECONDARY"
+                            && assignment.actNumber
+                            === currentAct
+                        ),
                 );
 
         const objectives =
@@ -805,9 +1800,28 @@ export class GameService {
 
             roleAssignment: {
                 ...roleAssignment,
+
+                ...(
+                    roleAssignment
+                        .targetPlayerIds
+                        === undefined
+                        ? {}
+                        : {
+                            targetPlayerIds: [
+                                ...roleAssignment
+                                    .targetPlayerIds,
+                            ],
+                        }
+                ),
             },
 
             role,
+
+            roleTargets,
+
+            lovePartners,
+
+            power,
 
             objectives,
         };
@@ -838,8 +1852,14 @@ export class GameService {
             seed:
                 session.seed,
 
+            trackingMode:
+                session.trackingMode,
+
             state:
                 session.game.state,
+
+            currentAct:
+                session.game.currentAct,
 
             players:
                 session.game

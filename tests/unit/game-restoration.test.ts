@@ -9,7 +9,7 @@ import {
 } from "../../src/domain/games/game.js";
 
 function createActiveGame():
-Game {
+  Game {
   const game =
     new Game();
 
@@ -192,6 +192,9 @@ describe(
         Game.restore({
           state:
             "ACTIVE",
+
+          currentAct:
+            1,
 
           players: [
             {

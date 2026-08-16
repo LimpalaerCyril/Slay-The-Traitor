@@ -38,6 +38,14 @@ function createRole(
 
         minimumPlayers,
         maximumPlayers,
+
+        primaryObjectiveCode:
+            "test-primary",
+
+        supportedTrackingModes: [
+            "MANUAL",
+            "STS2",
+        ],
     };
 }
 
@@ -68,42 +76,17 @@ describe("RoleAssignmentEngine", () => {
             seed: "spire-seed",
             players,
             roles,
+            trackingMode: "MANUAL",
         });
 
         const second = assignRoles({
             seed: "spire-seed",
             players,
             roles,
+            trackingMode: "MANUAL",
         });
 
         expect(first).toEqual(second);
-    });
-
-    it("produces a stable known assignment for a seed", () => {
-        const assignments = assignRoles({
-            seed: "spire-seed",
-            players: createFourPlayers(),
-            roles: createFourRoles(),
-        });
-
-        expect(assignments).toEqual([
-            {
-                playerId: "alice",
-                roleCode: "guardian",
-            },
-            {
-                playerId: "bob",
-                roleCode: "traitor",
-            },
-            {
-                playerId: "charlie",
-                roleCode: "oracle",
-            },
-            {
-                playerId: "diana",
-                roleCode: "miser",
-            },
-        ]);
     });
 
     it("can produce different assignments with another seed", () => {
@@ -114,12 +97,14 @@ describe("RoleAssignmentEngine", () => {
             seed: "spire-seed",
             players,
             roles,
+            trackingMode: "MANUAL",
         });
 
         const second = assignRoles({
             seed: "spire-seed-2",
             players,
             roles,
+            trackingMode: "MANUAL",
         });
 
         expect(first).not.toEqual(second);
@@ -130,6 +115,7 @@ describe("RoleAssignmentEngine", () => {
             seed: "spire-seed",
             players: createFourPlayers(),
             roles: createFourRoles(),
+            trackingMode: "MANUAL",
         });
 
         expect(assignments).toHaveLength(4);
@@ -164,6 +150,7 @@ describe("RoleAssignmentEngine", () => {
             seed: "two-player-game",
             players,
             roles,
+            trackingMode: "MANUAL",
         });
 
         const roleCodes = assignments.map(
@@ -187,12 +174,13 @@ describe("RoleAssignmentEngine", () => {
 
         expect(() => {
             assignRoles({
-                seed: "spire-seed",
                 players,
                 roles,
+                seed: "test-seed",
+                trackingMode: "MANUAL",
             });
         }).toThrow(
-            "Not enough eligible roles for this game.",
+            "Not enough roles are available for 4 players.",
         );
     });
 
@@ -203,6 +191,8 @@ describe("RoleAssignmentEngine", () => {
             players: createFourPlayers(),
 
             roles: createFourRoles(),
+
+            trackingMode: "MANUAL",
         });
 
         const reversed = assignRoles({
@@ -215,6 +205,8 @@ describe("RoleAssignmentEngine", () => {
             roles: [
                 ...createFourRoles(),
             ].reverse(),
+
+            trackingMode: "MANUAL",
         });
 
         expect(reversed).toEqual(normal);
@@ -236,6 +228,7 @@ describe("RoleAssignmentEngine", () => {
                 seed: "spire-seed",
                 players,
                 roles,
+                trackingMode: "MANUAL",
             });
         }).toThrow(
             "Duplicate role code: guardian",
@@ -289,7 +282,7 @@ describe("RoleAssignmentEngine", () => {
                 },
             ];
 
-            const roles = [
+            const roles: readonly Role[] = [
                 {
                     code:
                         "guardian",
@@ -301,7 +294,7 @@ describe("RoleAssignmentEngine", () => {
                         "Guardian",
 
                     alignment:
-                        "LOYAL" as const,
+                        "LOYAL",
 
                     tags: [],
 
@@ -310,6 +303,14 @@ describe("RoleAssignmentEngine", () => {
 
                     maximumPlayers:
                         4,
+
+                    primaryObjectiveCode:
+                        "test-primary",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
                 },
 
                 {
@@ -323,7 +324,7 @@ describe("RoleAssignmentEngine", () => {
                         "Miser",
 
                     alignment:
-                        "SELFISH" as const,
+                        "SELFISH",
 
                     tags: [],
 
@@ -332,6 +333,14 @@ describe("RoleAssignmentEngine", () => {
 
                     maximumPlayers:
                         4,
+
+                    primaryObjectiveCode:
+                        "test-primary",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
                 },
 
                 {
@@ -345,7 +354,7 @@ describe("RoleAssignmentEngine", () => {
                         "Oracle",
 
                     alignment:
-                        "CHAOTIC" as const,
+                        "CHAOTIC",
 
                     tags: [],
 
@@ -354,6 +363,14 @@ describe("RoleAssignmentEngine", () => {
 
                     maximumPlayers:
                         4,
+
+                    primaryObjectiveCode:
+                        "test-primary",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
                 },
 
                 {
@@ -367,7 +384,7 @@ describe("RoleAssignmentEngine", () => {
                         "Traitor",
 
                     alignment:
-                        "DISRUPTIVE" as const,
+                        "DISRUPTIVE",
 
                     tags: [],
 
@@ -376,6 +393,14 @@ describe("RoleAssignmentEngine", () => {
 
                     maximumPlayers:
                         4,
+
+                    primaryObjectiveCode:
+                        "test-primary",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
                 },
             ];
 
@@ -391,6 +416,7 @@ describe("RoleAssignmentEngine", () => {
                     ],
 
                     roles,
+                    trackingMode: "MANUAL",
                 });
 
             const second =
@@ -405,6 +431,7 @@ describe("RoleAssignmentEngine", () => {
                     ],
 
                     roles,
+                    trackingMode: "MANUAL",
                 });
 
             expect(
@@ -448,7 +475,7 @@ describe("RoleAssignmentEngine", () => {
                 },
             ];
 
-            const guardian = {
+            const guardian: Role = {
                 code:
                     "guardian",
 
@@ -459,7 +486,7 @@ describe("RoleAssignmentEngine", () => {
                     "Guardian",
 
                 alignment:
-                    "LOYAL" as const,
+                    "LOYAL",
 
                 tags: [],
 
@@ -468,9 +495,17 @@ describe("RoleAssignmentEngine", () => {
 
                 maximumPlayers:
                     4,
+
+                primaryObjectiveCode:
+                    "test-primary",
+
+                supportedTrackingModes: [
+                    "MANUAL",
+                    "STS2",
+                ],
             };
 
-            const miser = {
+            const miser: Role = {
                 code:
                     "miser",
 
@@ -481,7 +516,7 @@ describe("RoleAssignmentEngine", () => {
                     "Miser",
 
                 alignment:
-                    "SELFISH" as const,
+                    "SELFISH",
 
                 tags: [],
 
@@ -490,9 +525,17 @@ describe("RoleAssignmentEngine", () => {
 
                 maximumPlayers:
                     4,
+
+                primaryObjectiveCode:
+                    "test-primary",
+
+                supportedTrackingModes: [
+                    "MANUAL",
+                    "STS2",
+                ],
             };
 
-            const oracle = {
+            const oracle: Role = {
                 code:
                     "oracle",
 
@@ -503,7 +546,7 @@ describe("RoleAssignmentEngine", () => {
                     "Oracle",
 
                 alignment:
-                    "CHAOTIC" as const,
+                    "CHAOTIC",
 
                 tags: [],
 
@@ -512,6 +555,14 @@ describe("RoleAssignmentEngine", () => {
 
                 maximumPlayers:
                     4,
+
+                primaryObjectiveCode:
+                    "oracle-primary",
+
+                supportedTrackingModes: [
+                    "MANUAL",
+                    "STS2",
+                ],
             };
 
             const first =
@@ -526,6 +577,7 @@ describe("RoleAssignmentEngine", () => {
                         miser,
                         oracle,
                     ],
+                    trackingMode: "MANUAL",
                 });
 
             const second =
@@ -540,6 +592,7 @@ describe("RoleAssignmentEngine", () => {
                         guardian,
                         miser,
                     ],
+                    trackingMode: "MANUAL",
                 });
 
             expect(

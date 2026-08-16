@@ -10,6 +10,11 @@ import type {
 } from "../../application/game-repository/game-repository.js";
 
 import {
+    isGameAct,
+    type GameAct,
+} from "../../domain/games/game-act.js";
+
+import {
     Game,
 } from "../../domain/games/game.js";
 
@@ -22,6 +27,7 @@ import {
     gamesTable,
     objectiveAssignmentsTable,
     roleAssignmentsTable,
+    powerAssignmentsTable,
 } from "./schema.js";
 
 export class PostgresGameRepository
@@ -71,6 +77,9 @@ export class PostgresGameRepository
                         seed:
                             session.seed,
 
+                        trackingMode:
+                            session.trackingMode,
+
                         state:
                             gameData.state,
 
@@ -80,6 +89,10 @@ export class PostgresGameRepository
 
                         updatedAt:
                             now,
+
+                        currentAct:
+                            gameData.currentAct
+                            ?? null,
                     })
                     .onConflictDoUpdate({
                         target:
@@ -106,6 +119,9 @@ export class PostgresGameRepository
                             seed:
                                 session.seed,
 
+                            trackingMode:
+                                session.trackingMode,
+
                             state:
                                 gameData.state,
 
@@ -115,6 +131,10 @@ export class PostgresGameRepository
 
                             updatedAt:
                                 now,
+
+                            currentAct:
+                                gameData.currentAct
+                                ?? null,
                         },
                     });
 
@@ -134,6 +154,17 @@ export class PostgresGameRepository
                     .where(
                         eq(
                             objectiveAssignmentsTable.gameId,
+                            session.id,
+                        ),
+                    );
+
+                await transaction
+                    .delete(
+                        powerAssignmentsTable,
+                    )
+                    .where(
+                        eq(
+                            powerAssignmentsTable.gameId,
                             session.id,
                         ),
                     );
@@ -216,6 +247,68 @@ export class PostgresGameRepository
 
                                         roleCode:
                                             assignment.roleCode,
+
+                                        variantCode:
+                                            assignment.variantCode
+                                            ?? null,
+
+                                        targetPlayerIds:
+                                            assignment.targetPlayerIds
+                                                === undefined
+                                                ? []
+                                                : [
+                                                    ...assignment
+                                                        .targetPlayerIds,
+                                                ],
+
+                                        setupCompleted:
+                                            assignment.setupCompleted
+                                            ?? true,
+                                    }),
+                                ),
+                        );
+                }
+
+                if (
+                    gameData
+                        .powerAssignments
+                    !== undefined
+                    && gameData
+                        .powerAssignments
+                        .length > 0
+                ) {
+                    await transaction
+                        .insert(
+                            powerAssignmentsTable,
+                        )
+                        .values(
+                            gameData
+                                .powerAssignments
+                                .map(
+                                    assignment => ({
+                                        gameId:
+                                            session.id,
+
+                                        playerId:
+                                            assignment
+                                                .playerId,
+
+                                        powerCode:
+                                            assignment
+                                                .powerCode,
+
+                                        targetPlayerIds: [
+                                            ...assignment
+                                                .targetPlayerIds,
+                                        ],
+
+                                        setupCompleted:
+                                            assignment
+                                                .setupCompleted,
+
+                                        uses:
+                                            assignment
+                                                .uses,
                                     }),
                                 ),
                         );
@@ -259,6 +352,10 @@ export class PostgresGameRepository
 
                                         status:
                                             assignment.status,
+
+                                        actNumber:
+                                            assignment.actNumber
+                                            ?? null,
                                     }),
                                 ),
                         );
@@ -356,6 +453,7 @@ export class PostgresGameRepository
         const [
             playerRows,
             roleRows,
+            powerRows,
             objectiveRows,
         ] =
             await Promise.all([
@@ -389,6 +487,18 @@ export class PostgresGameRepository
                 this.db
                     .select()
                     .from(
+                        powerAssignmentsTable,
+                    )
+                    .where(
+                        eq(
+                            powerAssignmentsTable.gameId,
+                            gameRow.id,
+                        ),
+                    ),
+
+                this.db
+                    .select()
+                    .from(
                         objectiveAssignmentsTable,
                     )
                     .where(
@@ -400,17 +510,24 @@ export class PostgresGameRepository
             ]);
 
         /*
-         * Dès qu'il existe une affectation
-         * secrète, Game.restore() vérifie que
-         * l'ensemble est complet.
-         *
-         * Une corruption partielle de la DB
-         * provoquera donc volontairement une
-         * erreur de réhydratation.
-         */
+        * Pendant SETUP, les rôles sont déjà
+        * affectés mais les objectifs ne le sont
+        * pas encore.
+        *
+        * La présence d'objectifs indique donc
+        * que la préparation secrète complète
+        * a été effectuée.
+        *
+        * Game.restore() vérifiera ensuite que
+        * l'ensemble rôle + objectifs est cohérent.
+        */
         const secretAssignmentsPrepared =
-            roleRows.length > 0
-            || objectiveRows.length > 0;
+            objectiveRows.length > 0;
+
+        const currentAct =
+            parseGameAct(
+                gameRow.currentAct,
+            );
 
         const game =
             Game.restore({
@@ -442,35 +559,96 @@ export class PostgresGameRepository
 
                             roleCode:
                                 row.roleCode,
+
+                            ...(
+                                row.variantCode
+                                    === null
+                                    ? {}
+                                    : {
+                                        variantCode:
+                                            row.variantCode,
+                                    }
+                            ),
+
+                            targetPlayerIds: [
+                                ...row.targetPlayerIds,
+                            ],
+
+                            setupCompleted:
+                                row.setupCompleted,
+                        }),
+                    ),
+
+                powerAssignments:
+                    powerRows.map(
+                        row => ({
+                            playerId:
+                                row.playerId,
+
+                            powerCode:
+                                row.powerCode,
+
+                            targetPlayerIds: [
+                                ...row.targetPlayerIds,
+                            ],
+
+                            setupCompleted:
+                                row.setupCompleted,
+
+                            uses:
+                                row.uses,
                         }),
                     ),
 
                 objectiveAssignments:
                     objectiveRows.map(
-                        row => ({
-                            playerId:
-                                row.playerId,
+                        row => {
+                            const actNumber =
+                                parseGameAct(
+                                    row.actNumber,
+                                );
 
-                            objectiveCode:
-                                row.objectiveCode,
+                            return {
+                                playerId:
+                                    row.playerId,
 
-                            objectiveType:
-                                row.objectiveType,
+                                objectiveCode:
+                                    row.objectiveCode,
 
-                            progress: {
-                                current:
-                                    row.progressCurrent,
+                                objectiveType:
+                                    row.objectiveType,
 
-                                target:
-                                    row.progressTarget,
-                            },
+                                ...(
+                                    actNumber === undefined
+                                        ? {}
+                                        : {
+                                            actNumber,
+                                        }
+                                ),
 
-                            status:
-                                row.status,
-                        }),
+                                progress: {
+                                    current:
+                                        row.progressCurrent,
+
+                                    target:
+                                        row.progressTarget,
+                                },
+
+                                status:
+                                    row.status,
+                            };
+                        },
                     ),
 
                 secretAssignmentsPrepared,
+
+                ...(
+                    currentAct === undefined
+                        ? {}
+                        : {
+                            currentAct,
+                        }
+                ),
             });
 
         return {
@@ -497,6 +675,9 @@ export class PostgresGameRepository
             seed:
                 gameRow.seed,
 
+            trackingMode:
+                gameRow.trackingMode,
+
             contradiction:
                 gameRow.contradiction
                 ?? undefined,
@@ -504,4 +685,27 @@ export class PostgresGameRepository
             game,
         };
     }
+}
+
+function parseGameAct(
+    value:
+        number | null,
+): GameAct | undefined {
+    if (
+        value === null
+    ) {
+        return undefined;
+    }
+
+    if (
+        !isGameAct(
+            value,
+        )
+    ) {
+        throw new Error(
+            `Invalid game act stored in database: ${value}`,
+        );
+    }
+
+    return value;
 }

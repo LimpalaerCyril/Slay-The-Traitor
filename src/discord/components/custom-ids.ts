@@ -23,6 +23,50 @@ export const CustomId = {
     return `spire:lobby:start:${gameId}`;
   },
 
+  roleSetupOpen(
+    gameId: string,
+  ): string {
+    return `spire:setup:open:${gameId}`;
+  },
+
+  roleSetupVariant(
+    gameId: string,
+    variantCode: string,
+  ): string {
+    return [
+      "spire",
+      "setup",
+      "variant",
+      gameId,
+      variantCode,
+    ].join(":");
+  },
+
+  roleSetupTarget(
+    gameId: string,
+    variantCode: string,
+  ): string {
+    return [
+      "spire",
+      "setup",
+      "target",
+      gameId,
+      variantCode,
+    ].join(":");
+  },
+
+  powerSetupOpen(
+    gameId: string,
+  ): string {
+    return `spire:power:setup:${gameId}`;
+  },
+
+  powerSetupTarget(
+    gameId: string,
+  ): string {
+    return `spire:power:target:${gameId}`;
+  },
+
   characterSelect(
     gameId: string,
     lobbyMessageId: string,
@@ -44,43 +88,43 @@ export const CustomId = {
 } as const;
 
 export interface ParsedCustomId {
-    readonly scope: string;
-    readonly action: string;
-    readonly gameId: string;
-    readonly extra:
-    readonly string[];
+  readonly scope: string;
+  readonly action: string;
+  readonly gameId: string;
+  readonly extra:
+  readonly string[];
 }
 
 export function parseCustomId(
-    customId: string,
+  customId: string,
 ): ParsedCustomId | undefined {
-    const parts =
-        customId.split(":");
+  const parts =
+    customId.split(":");
 
-    if (
-        parts.length < 4
-        || parts[0] !== "spire"
-    ) {
-        return undefined;
-    }
+  if (
+    parts.length < 4
+    || parts[0] !== "spire"
+  ) {
+    return undefined;
+  }
 
-    const scope = parts[1];
-    const action = parts[2];
-    const gameId = parts[3];
+  const scope = parts[1];
+  const action = parts[2];
+  const gameId = parts[3];
 
-    if (
-        scope === undefined
-        || action === undefined
-        || gameId === undefined
-    ) {
-        return undefined;
-    }
+  if (
+    scope === undefined
+    || action === undefined
+    || gameId === undefined
+  ) {
+    return undefined;
+  }
 
-    return {
-        scope,
-        action,
-        gameId,
-        extra:
-            parts.slice(4),
-    };
+  return {
+    scope,
+    action,
+    gameId,
+    extra:
+      parts.slice(4),
+  };
 }

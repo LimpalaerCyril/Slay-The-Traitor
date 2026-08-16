@@ -6,26 +6,68 @@ import {
     boolean,
     check,
     foreignKey,
+    index,
     integer,
+    jsonb,
     pgEnum,
     pgTable,
     primaryKey,
+    serial,
     text,
     timestamp,
     unique,
     uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import type {
+    EventPayload,
+} from "../../domain/events/game-events.js";
+
+import type {
+    EventType,
+} from "../../domain/events/event-type.js";
+
 export const gameStateEnum =
     pgEnum(
         "game_state",
         [
             "LOBBY",
+            "SETUP",
             "READY",
             "ACTIVE",
             "VOTING",
             "FINISHED",
             "CANCELLED",
+        ],
+    );
+
+export const gameTrackingModeEnum =
+    pgEnum(
+        "game_tracking_mode",
+        [
+            "MANUAL",
+            "STS2",
+        ],
+    );
+
+export const gameEventSourceEnum =
+    pgEnum(
+        "game_event_source",
+        [
+            "DISCORD",
+            "MANUAL",
+            "MOD",
+            "SYSTEM",
+        ],
+    );
+
+export const gameEventValidationStatusEnum =
+    pgEnum(
+        "game_event_validation_status",
+        [
+            "PENDING",
+            "VERIFIED",
+            "REJECTED",
         ],
     );
 
@@ -79,6 +121,13 @@ export const gamesTable =
                 text("seed")
                     .notNull(),
 
+            trackingMode:
+                gameTrackingModeEnum(
+                    "tracking_mode",
+                )
+                    .notNull()
+                    .default("MANUAL"),
+
             state:
                 gameStateEnum("state")
                     .notNull()
@@ -106,6 +155,11 @@ export const gamesTable =
                 )
                     .notNull()
                     .defaultNow(),
+
+            currentAct:
+                integer(
+                    "current_act",
+                ),
         },
 
         table => [
@@ -118,13 +172,26 @@ export const gamesTable =
                 )
                 .where(
                     sql`
-            ${table.state}
-            NOT IN (
-              'FINISHED',
-              'CANCELLED'
-            )
-          `,
+                        ${table.state}
+                        NOT IN (
+                        'FINISHED',
+                        'CANCELLED'
+                        )
+                    `,
                 ),
+
+            check(
+                "games_current_act_valid",
+
+                sql`
+                    ${table.currentAct}
+                    IS NULL
+                    OR (
+                    ${table.currentAct} >= 1
+                    AND ${table.currentAct} <= 3
+                    )
+                `,
+            ),
         ],
     );
 
@@ -201,6 +268,115 @@ export const gamePlayersTable =
         ],
     );
 
+export const gameEventsTable =
+    pgTable(
+        "game_events",
+        {
+            id:
+                text("id")
+                    .primaryKey(),
+
+            gameId:
+                text("game_id")
+                    .notNull()
+                    .references(
+                        () =>
+                            gamesTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
+
+            eventType:
+                text("event_type")
+                    .$type<EventType>()
+                    .notNull(),
+
+            actNumber:
+                integer(
+                    "act_number",
+                ),
+
+            actorPlayerId:
+                text(
+                    "actor_player_id",
+                ),
+
+            targetPlayerId:
+                text(
+                    "target_player_id",
+                ),
+
+            payload:
+                jsonb(
+                    "payload",
+                )
+                    .$type<EventPayload>()
+                    .notNull()
+                    .default(
+                        sql`
+                            '{}'::jsonb
+                        `,
+                    ),
+
+            source:
+                gameEventSourceEnum(
+                    "source",
+                )
+                    .notNull(),
+
+            validationStatus:
+                gameEventValidationStatusEnum(
+                    "validation_status",
+                )
+                    .notNull()
+                    .default(
+                        "PENDING",
+                    ),
+
+            createdAt:
+                timestamp(
+                    "created_at",
+                    {
+                        withTimezone:
+                            true,
+                    },
+                )
+                    .notNull()
+                    .defaultNow(),
+        },
+
+        table => [
+            index(
+                "game_events_game_created_at_idx",
+            ).on(
+                table.gameId,
+                table.createdAt,
+            ),
+
+            index(
+                "game_events_game_type_idx",
+            ).on(
+                table.gameId,
+                table.eventType,
+            ),
+
+            check(
+                "game_events_act_number_valid",
+
+                sql`
+                    ${table.actNumber}
+                    IS NULL
+                    OR (
+                        ${table.actNumber} >= 1
+                        AND ${table.actNumber} <= 3
+                    )
+                `,
+            ),
+        ],
+    );
+
 export const roleAssignmentsTable =
     pgTable(
         "role_assignments",
@@ -224,6 +400,32 @@ export const roleAssignmentsTable =
             roleCode:
                 text("role_code")
                     .notNull(),
+
+            variantCode:
+                text(
+                    "variant_code",
+                ),
+
+            targetPlayerIds:
+                jsonb(
+                    "target_player_ids",
+                )
+                    .$type<string[]>()
+                    .notNull()
+                    .default(
+                        sql`
+                            '[]'::jsonb
+                        `,
+                    ),
+
+            setupCompleted:
+                boolean(
+                    "setup_completed",
+                )
+                    .notNull()
+                    .default(
+                        true,
+                    ),
         },
 
         table => [
@@ -265,6 +467,12 @@ export const objectiveAssignmentsTable =
     pgTable(
         "objective_assignments",
         {
+            id:
+                serial(
+                    "id",
+                )
+                    .primaryKey(),
+
             gameId:
                 text("game_id")
                     .notNull()
@@ -310,19 +518,58 @@ export const objectiveAssignmentsTable =
                 )
                     .notNull()
                     .default("PENDING"),
+
+            actNumber:
+                integer(
+                    "act_number",
+                ),
         },
 
         table => [
-            primaryKey({
-                name:
-                    "objective_assignments_pk",
-
-                columns: [
+            uniqueIndex(
+                "objective_assignments_primary_unique",
+            )
+                .on(
                     table.gameId,
                     table.playerId,
-                    table.objectiveType,
-                ],
-            }),
+                )
+                .where(
+                    sql`
+                        ${table.objectiveType}
+                        = 'PRIMARY'
+                    `,
+                ),
+
+            uniqueIndex(
+                "objective_assignments_secondary_act_unique",
+            )
+                .on(
+                    table.gameId,
+                    table.playerId,
+                    table.actNumber,
+                )
+                .where(
+                    sql`
+                        ${table.objectiveType}
+                        = 'SECONDARY'
+                    `,
+                ),
+
+            check(
+                "objective_assignments_scope_valid",
+
+                sql`
+                    (
+                    ${table.objectiveType} = 'PRIMARY'
+                    AND ${table.actNumber} IS NULL
+                    )
+                    OR
+                    (
+                    ${table.objectiveType} = 'SECONDARY'
+                    AND ${table.actNumber} BETWEEN 1 AND 3
+                    )
+                `,
+            ),
 
             foreignKey({
                 name:
@@ -343,16 +590,100 @@ export const objectiveAssignmentsTable =
                 "objective_progress_current_non_negative",
 
                 sql`
-          ${table.progressCurrent} >= 0
-        `,
+                    ${table.progressCurrent} >= 0
+                `,
             ),
 
             check(
                 "objective_progress_target_positive",
 
                 sql`
-          ${table.progressTarget} > 0
-        `,
+                    ${table.progressTarget} > 0
+                `,
+            ),
+        ],
+    );
+
+export const powerAssignmentsTable =
+    pgTable(
+        "power_assignments",
+
+        {
+            gameId:
+                text(
+                    "game_id",
+                )
+                    .notNull()
+                    .references(
+                        () =>
+                            gamesTable.id,
+
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
+
+            playerId:
+                text(
+                    "player_id",
+                )
+                    .notNull(),
+
+            powerCode:
+                text(
+                    "power_code",
+                )
+                    .notNull(),
+
+            targetPlayerIds:
+                jsonb(
+                    "target_player_ids",
+                )
+                    .$type<string[]>()
+                    .notNull()
+                    .default(
+                        sql`
+                            '[]'::jsonb
+                        `,
+                    ),
+
+            setupCompleted:
+                boolean(
+                    "setup_completed",
+                )
+                    .notNull()
+                    .default(
+                        true,
+                    ),
+
+            uses:
+                integer(
+                    "uses",
+                )
+                    .notNull()
+                    .default(
+                        0,
+                    ),
+        },
+
+        table => [
+            primaryKey({
+                name:
+                    "power_assignments_pk",
+
+                columns: [
+                    table.gameId,
+                    table.playerId,
+                ],
+            }),
+
+            check(
+                "power_assignments_uses_non_negative",
+
+                sql`
+                    ${table.uses} >= 0
+                `,
             ),
         ],
     );

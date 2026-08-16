@@ -71,5 +71,95 @@ describe(
         ),
       ).toBeUndefined();
     });
+
+    it(
+      "parses a role setup open custom id",
+      () => {
+        const parsed =
+          parseCustomId(
+            CustomId
+              .roleSetupOpen(
+                "game-1",
+              ),
+          );
+
+        expect(
+          parsed,
+        ).toEqual({
+          scope:
+            "setup",
+
+          action:
+            "open",
+
+          gameId:
+            "game-1",
+
+          extra: [],
+        });
+      },
+    );
+
+    it(
+      "parses a role setup variant custom id",
+      () => {
+        const parsed =
+          parseCustomId(
+            CustomId
+              .roleSetupVariant(
+                "game-1",
+                "guardian",
+              ),
+          );
+
+        expect(
+          parsed,
+        ).toEqual({
+          scope:
+            "setup",
+
+          action:
+            "variant",
+
+          gameId:
+            "game-1",
+
+          extra: [
+            "guardian",
+          ],
+        });
+      },
+    );
+
+    it(
+      "parses a role setup target custom id",
+      () => {
+        const parsed =
+          parseCustomId(
+            CustomId
+              .roleSetupTarget(
+                "game-1",
+                "fallen",
+              ),
+          );
+
+        expect(
+          parsed,
+        ).toEqual({
+          scope:
+            "setup",
+
+          action:
+            "target",
+
+          gameId:
+            "game-1",
+
+          extra: [
+            "fallen",
+          ],
+        });
+      },
+    );
   },
 );

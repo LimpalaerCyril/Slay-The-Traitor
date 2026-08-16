@@ -95,7 +95,7 @@ function createObjectiveAssignments(
 }
 
 function createReadyGame():
-Game {
+  Game {
   const game =
     new Game();
 
@@ -415,7 +415,7 @@ describe("Game", () => {
         ]),
       );
     }).toThrow(
-      "Every player must receive one primary and one secondary objective.",
+      "Player bob must have exactly one primary objective.",
     );
   });
 

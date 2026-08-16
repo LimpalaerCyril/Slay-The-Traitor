@@ -25,9 +25,30 @@ import {
   handleCharacterSelect,
 } from "./components/handle-character-select.js";
 
+import {
+  handleRoleSetupButton,
+} from "./components/handle-role-setup-button.js";
+
+import {
+  handleRoleSetupSelect,
+} from "./components/handle-role-setup-select.js";
+
+import {
+  handlePowerSetupButton,
+} from "./components/handle-power-setup-button.js";
+
+import {
+  handlePowerSetupSelect,
+} from "./components/handle-power-setup-select.js";
+
+import type {
+  GameEventService,
+} from "../application/game-event-service/game-event-service.js";
+
 export interface DiscordClientDependencies {
-  readonly gameService:
-  GameService;
+  readonly gameService: GameService;
+
+  readonly gameEventService: GameEventService;
 }
 
 export function createDiscordClient(
@@ -77,6 +98,7 @@ export function createDiscordClient(
           await handleSpireCommand(
             interaction,
             dependencies.gameService,
+            dependencies.gameEventService,
           );
 
           return;
@@ -91,7 +113,33 @@ export function createDiscordClient(
               dependencies.gameService,
             );
 
-          if (lobbyHandled) {
+          if (
+            lobbyHandled
+          ) {
+            return;
+          }
+
+          const roleSetupHandled =
+            await handleRoleSetupButton(
+              interaction,
+              dependencies.gameService,
+            );
+
+          if (
+            roleSetupHandled
+          ) {
+            return;
+          }
+
+          const powerSetupHandled =
+            await handlePowerSetupButton(
+              interaction,
+              dependencies.gameService,
+            );
+
+          if (
+            powerSetupHandled
+          ) {
             return;
           }
 
@@ -101,7 +149,9 @@ export function createDiscordClient(
               dependencies.gameService,
             );
 
-          if (secretHandled) {
+          if (
+            secretHandled
+          ) {
             return;
           }
 
@@ -115,6 +165,30 @@ export function createDiscordClient(
         if (
           interaction.isStringSelectMenu()
         ) {
+          const roleSetupHandled =
+            await handleRoleSetupSelect(
+              interaction,
+              dependencies.gameService,
+            );
+
+          if (
+            roleSetupHandled
+          ) {
+            return;
+          }
+
+          const powerSetupHandled =
+            await handlePowerSetupSelect(
+              interaction,
+              dependencies.gameService,
+            );
+
+          if (
+            powerSetupHandled
+          ) {
+            return;
+          }
+
           await handleCharacterSelect(
             interaction,
             dependencies.gameService,

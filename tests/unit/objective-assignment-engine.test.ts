@@ -74,7 +74,7 @@ function createObjective(
 
     hiddenProgress: false,
 
-    progressRule: {
+    rule: {
       type: "EVENT_COUNT",
 
       eventType:
@@ -89,6 +89,11 @@ function createObjective(
           ? 3
           : 2,
     },
+
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 

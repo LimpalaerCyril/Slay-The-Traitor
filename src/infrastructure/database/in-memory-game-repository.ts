@@ -97,6 +97,9 @@ function cloneSession(
         seed:
             session.seed,
 
+        trackingMode:
+            session.trackingMode,
+
         contradiction:
             session.contradiction,
 

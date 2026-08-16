@@ -2,6 +2,10 @@ import type {
     Game,
 } from "../../domain/games/game.js";
 
+import type {
+    GameTrackingMode,
+} from "../../domain/games/game-tracking-mode.js";
+
 export interface GameSession {
     readonly id: string;
 
@@ -18,6 +22,9 @@ export interface GameSession {
     string;
 
     readonly seed: string;
+
+    readonly trackingMode:
+    GameTrackingMode;
 
     contradiction:
     number | undefined;

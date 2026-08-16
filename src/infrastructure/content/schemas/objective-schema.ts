@@ -1,180 +1,524 @@
-import { z } from "zod";
+import {
+    z,
+} from "zod";
+
+import {
+    EVENT_TYPES,
+} from "../../../domain/events/event-type.js";
 
 import type {
-  Objective,
+    Objective,
 } from "../../../domain/objectives/objective.js";
 
-const eventTypeSchema = z.enum([
-  "PLAYER_DIED",
-  "PLAYER_HP_CHANGED",
-  "CURSE_ADDED",
-  "GOLD_CHANGED",
-  "RELIC_ACQUIRED",
-  "BOSS_DEFEATED",
-  "ACT_COMPLETED",
-  "PLAYER_MUTED",
-  "VOTE_CAST",
-  "POWER_USED",
-]);
+const eventTypeSchema =
+    z.enum(
+        EVENT_TYPES,
+    );
 
-const verificationModeSchema = z.enum([
-  "DISCORD",
-  "SELF_REPORT",
-  "GROUP_CONFIRMED",
-  "MOD_ONLY",
-]);
+const verificationModeSchema =
+    z.enum([
+        "DISCORD",
+        "SELF_REPORT",
+        "GROUP_CONFIRMED",
+        "MOD_ONLY",
+    ]);
 
-const objectiveDifficultySchema = z.enum([
-  "EASY",
-  "MEDIUM",
-  "HARD",
-]);
+const objectiveDifficultySchema =
+    z.enum([
+        "EASY",
+        "MEDIUM",
+        "HARD",
+    ]);
 
-const objectiveTypeSchema = z.enum([
-  "PRIMARY",
-  "SECONDARY",
-]);
+const objectiveTypeSchema =
+    z.enum([
+        "PRIMARY",
+        "SECONDARY",
+    ]);
 
-const objectiveProgressRuleSchema =
-  z.discriminatedUnion(
-    "type",
-    [
-      z.object({
-        type: z.literal("EVENT_COUNT"),
+const participantSelectorSchema =
+    z.enum([
+        "OWNER",
+        "OTHER",
+        "ANY",
+    ]);
 
-        eventType: eventTypeSchema,
+const resolutionSchema =
+    z.enum([
+        "ACT_END",
+        "GAME_END",
+    ]);
 
-        actor: z.enum([
-          "OWNER",
-          "ANY",
-        ]),
+const eventCountRuleSchema =
+    z.object({
+        type:
+            z.literal(
+                "EVENT_COUNT",
+            ),
 
-        target: z.enum([
-          "OWNER",
-          "OTHER",
-          "ANY",
-        ]),
+        eventType:
+            eventTypeSchema,
 
-        increment: z
-          .number()
-          .int()
-          .positive(),
+        actor:
+            participantSelectorSchema,
 
-        requiredCount: z
-          .number()
-          .int()
-          .positive(),
-      }),
-    ],
-  );
+        target:
+            participantSelectorSchema,
 
-const objectiveSchema = z
-  .object({
-    code: z.string().min(1),
-    name: z.string().min(1),
-    description: z.string().min(1),
+        increment:
+            z.number()
+                .int()
+                .positive(),
 
-    category: z.string().min(1),
+        requiredCount:
+            z.number()
+                .int()
+                .positive(),
+    });
 
-    difficulty:
-      objectiveDifficultySchema,
+const valueSumRuleSchema =
+    z.object({
+        type:
+            z.literal(
+                "VALUE_SUM",
+            ),
 
-    minimumPlayers: z
-      .number()
-      .int()
-      .min(2)
-      .max(4),
+        eventType:
+            eventTypeSchema,
 
-    maximumPlayers: z
-      .number()
-      .int()
-      .min(2)
-      .max(4),
+        actor:
+            participantSelectorSchema,
 
-    allowedTypes: z
-      .array(objectiveTypeSchema)
-      .min(1),
+        target:
+            participantSelectorSchema,
 
-    requiredEvents: z.array(
-      eventTypeSchema,
-    ),
+        payloadField:
+            z.string()
+                .trim()
+                .min(1),
 
-    verificationMode:
-      verificationModeSchema,
+        targetValue:
+            z.number()
+                .positive(),
+    });
 
-    compatibilityTags: z.array(
-      z.string().min(1),
-    ),
+const rankingRuleSchema =
+    z.object({
+        type:
+            z.literal(
+                "RANKING",
+            ),
 
-    score: z
-      .number()
-      .int()
-      .nonnegative(),
+        eventType:
+            eventTypeSchema,
 
-    hiddenProgress: z.boolean(),
+        participant:
+            z.enum([
+                "ACTOR",
+                "TARGET",
+            ]),
 
-    progressRule:
-      objectiveProgressRuleSchema.optional(),
-  })
-  .superRefine(
-    (objective, context) => {
-      if (
-        objective.minimumPlayers
-        > objective.maximumPlayers
-      ) {
-        context.addIssue({
-          code: "custom",
-          message:
-            "minimumPlayers cannot exceed maximumPlayers.",
-        });
-      }
-    },
-  );
+        aggregation:
+            z.enum([
+                "COUNT",
+                "SUM",
+                "LATEST",
+            ]),
+
+        payloadField:
+            z.string()
+                .trim()
+                .min(1)
+                .optional(),
+
+        order:
+            z.enum([
+                "HIGHEST",
+                "LOWEST",
+            ]),
+
+        allowTies:
+            z.boolean(),
+
+        resolveAt:
+            resolutionSchema,
+    })
+        .superRefine(
+            (
+                rule,
+                context,
+            ) => {
+                if (
+                    rule.aggregation
+                    === "COUNT"
+                    && rule.payloadField
+                    !== undefined
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        path: [
+                            "payloadField",
+                        ],
+
+                        message:
+                            "COUNT ranking rules must not define payloadField.",
+                    });
+                }
+
+                if (
+                    rule.aggregation
+                    !== "COUNT"
+                    && rule.payloadField
+                    === undefined
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        path: [
+                            "payloadField",
+                        ],
+
+                        message:
+                            "SUM and LATEST ranking rules require payloadField.",
+                    });
+                }
+            },
+        );
+
+const objectiveConditionSchema =
+    z.discriminatedUnion(
+        "type",
+        [
+            z.object({
+                type:
+                    z.literal(
+                        "PLAYER_ALIVE",
+                    ),
+
+                player:
+                    z.enum([
+                        "OWNER",
+                        "ROLE_TARGET",
+                    ]),
+
+                expected:
+                    z.boolean(),
+            }),
+
+            z.object({
+                type:
+                    z.literal(
+                        "EXPEDITION_RESULT",
+                    ),
+
+                result:
+                    z.enum([
+                        "WON",
+                        "LOST",
+                    ]),
+            }),
+        ],
+    );
+
+const conditionRuleSchema =
+    z.object({
+        type:
+            z.literal(
+                "CONDITION",
+            ),
+
+        operator:
+            z.enum([
+                "ALL",
+                "ANY",
+            ]),
+
+        conditions:
+            z.array(
+                objectiveConditionSchema,
+            )
+                .min(1),
+
+        completeAt:
+            z.enum([
+                "IMMEDIATE",
+                "RESOLUTION",
+            ]),
+
+        resolveAt:
+            resolutionSchema,
+    });
+
+const forbiddenEventRuleSchema =
+    z.object({
+        type:
+            z.literal(
+                "FORBIDDEN_EVENT",
+            ),
+
+        eventType:
+            eventTypeSchema,
+
+        actor:
+            participantSelectorSchema,
+
+        target:
+            participantSelectorSchema,
+
+        resolveAt:
+            resolutionSchema,
+    });
+
+const objectiveRuleSchema =
+    z.union([
+        eventCountRuleSchema,
+        valueSumRuleSchema,
+        rankingRuleSchema,
+        conditionRuleSchema,
+        forbiddenEventRuleSchema,
+    ]);
+
+/*
+ * Compatibilité temporaire avec le
+ * contenu JSON déjà existant.
+ *
+ * Les anciens fichiers utilisent :
+ *
+ * "progressRule": {
+ *   "type": "EVENT_COUNT",
+ *   ...
+ * }
+ *
+ * Ils seront normalisés en Objective.rule.
+ */
+const legacyProgressRuleSchema =
+    eventCountRuleSchema;
+
+const objectiveSchema =
+    z.object({
+        code:
+            z.string()
+                .trim()
+                .min(1),
+
+        name:
+            z.string()
+                .trim()
+                .min(1),
+
+        description:
+            z.string()
+                .trim()
+                .min(1),
+
+        category:
+            z.string()
+                .trim()
+                .min(1),
+
+        difficulty:
+            objectiveDifficultySchema,
+
+        minimumPlayers:
+            z.number()
+                .int()
+                .min(2)
+                .max(4),
+
+        maximumPlayers:
+            z.number()
+                .int()
+                .min(2)
+                .max(4),
+
+        allowedTypes:
+            z.array(
+                objectiveTypeSchema,
+            )
+                .min(1),
+
+        requiredEvents:
+            z.array(
+                eventTypeSchema,
+            ),
+
+        verificationMode:
+            verificationModeSchema,
+
+        compatibilityTags:
+            z.array(
+                z.string()
+                    .trim()
+                    .min(1),
+            ),
+
+        score:
+            z.number()
+                .int()
+                .nonnegative(),
+
+        hiddenProgress:
+            z.boolean(),
+
+        /*
+         * Nouvelle propriété.
+         */
+        rule:
+            objectiveRuleSchema
+                .optional(),
+
+        /*
+         * Ancienne propriété.
+         * À supprimer lorsque tout le contenu
+         * aura été migré.
+         */
+        progressRule:
+            legacyProgressRuleSchema
+                .optional(),
+
+        supportedTrackingModes:
+            z.array(
+                z.enum([
+                    "MANUAL",
+                    "STS2",
+                ]),
+            )
+                .min(1)
+                .default([
+                    "MANUAL",
+                    "STS2",
+                ]),
+    })
+        .superRefine(
+            (
+                objective,
+                context,
+            ) => {
+                if (
+                    objective.minimumPlayers
+                    > objective.maximumPlayers
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        message:
+                            "minimumPlayers cannot exceed maximumPlayers.",
+                    });
+                }
+
+                if (
+                    objective.rule
+                    !== undefined
+                    && objective.progressRule
+                    !== undefined
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        path: [
+                            "rule",
+                        ],
+
+                        message:
+                            "Objective cannot define both rule and legacy progressRule.",
+                    });
+                }
+
+                const rule =
+                    objective.rule
+                    ?? objective.progressRule;
+
+                if (
+                    rule !== undefined
+                    && "eventType" in rule
+                    && !objective
+                        .requiredEvents
+                        .includes(
+                            rule.eventType,
+                        )
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        path: [
+                            "requiredEvents",
+                        ],
+
+                        message:
+                            `requiredEvents must contain ${rule.eventType}.`,
+                    });
+                }
+            },
+        );
 
 export function parseObjectiveDefinition(
-  input: unknown,
+    input:
+        unknown,
 ): Objective {
-  const parsed =
-    objectiveSchema.parse(input);
+    const parsed =
+        objectiveSchema.parse(
+            input,
+        );
 
-  const objective: Objective = {
-    code: parsed.code,
-    name: parsed.name,
-    description: parsed.description,
+    const rule =
+        parsed.rule
+        ?? parsed.progressRule;
 
-    category: parsed.category,
-    difficulty: parsed.difficulty,
+    return {
+        code:
+            parsed.code,
 
-    minimumPlayers:
-      parsed.minimumPlayers,
+        name:
+            parsed.name,
 
-    maximumPlayers:
-      parsed.maximumPlayers,
+        description:
+            parsed.description,
 
-    allowedTypes:
-      parsed.allowedTypes,
+        category:
+            parsed.category,
 
-    requiredEvents:
-      parsed.requiredEvents,
+        difficulty:
+            parsed.difficulty,
 
-    verificationMode:
-      parsed.verificationMode,
+        minimumPlayers:
+            parsed.minimumPlayers,
 
-    compatibilityTags:
-      parsed.compatibilityTags,
+        maximumPlayers:
+            parsed.maximumPlayers,
 
-    score: parsed.score,
+        allowedTypes:
+            parsed.allowedTypes,
 
-    hiddenProgress:
-      parsed.hiddenProgress,
+        requiredEvents:
+            parsed.requiredEvents,
 
-    ...(parsed.progressRule !== undefined
-      ? {
-        progressRule:
-          parsed.progressRule,
-      }
-      : {}),
-  };
+        verificationMode:
+            parsed.verificationMode,
 
-  return objective;
+        compatibilityTags:
+            parsed.compatibilityTags,
+
+        score:
+            parsed.score,
+
+        hiddenProgress:
+            parsed.hiddenProgress,
+
+        ...(
+            rule === undefined
+                ? {}
+                : {
+                    rule,
+                }
+        ),
+
+        supportedTrackingModes:
+            parsed.supportedTrackingModes,
+    };
 }

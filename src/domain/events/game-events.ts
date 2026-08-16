@@ -1,6 +1,7 @@
 import type { EventSource } from "./event-source.js";
 import type { EventType } from "./event-type.js";
 import type { ValidationStatus } from "./validation-status.js";
+import type { GameAct } from "../games/game-act.js";
 
 export type EventPayload = Readonly<Record<string, unknown>>;
 
@@ -9,6 +10,8 @@ export interface GameEvent {
   readonly gameId: string;
 
   readonly type: EventType;
+
+  readonly actNumber?: GameAct;
 
   readonly actorPlayerId?: string;
   readonly targetPlayerId?: string;

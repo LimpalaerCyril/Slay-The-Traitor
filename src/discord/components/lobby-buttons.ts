@@ -23,6 +23,13 @@ export function createGameControls(
                 ),
             ];
 
+        case "SETUP":
+            return [
+                createSetupControls(
+                    game,
+                ),
+            ];
+
         case "READY":
             return [
                 createReadyControls(
@@ -97,40 +104,47 @@ function createLobbyControls(
         );
 }
 
-function createReadyControls(
-    game: GameSnapshot,
-): ActionRowBuilder<ButtonBuilder> {
-    const startButton =
-        new ButtonBuilder()
-            .setCustomId(
-                CustomId.lobbyStart(
-                    game.id,
-                ),
-            )
-            .setLabel("Lancer la partie")
-            .setEmoji("▶️")
-            .setStyle(
-                ButtonStyle.Success,
-            );
-
-    return new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-            startButton,
-        );
-}
-
-function createActiveControls(
+function createSetupControls(
     game: GameSnapshot,
 ): ActionRowBuilder<ButtonBuilder> {
     const secretButton =
+        createSecretButton(
+            game,
+            "Voir mon rôle",
+        );
+
+    const roleSetupButton =
         new ButtonBuilder()
             .setCustomId(
-                CustomId.secretView(
-                    game.id,
-                ),
+                CustomId
+                    .roleSetupOpen(
+                        game.id,
+                    ),
             )
-            .setLabel("Voir mon rôle")
-            .setEmoji("🎭")
+            .setLabel(
+                "Configurer mon rôle",
+            )
+            .setEmoji(
+                "⚙️",
+            )
+            .setStyle(
+                ButtonStyle.Primary,
+            );
+
+    const powerSetupButton =
+        new ButtonBuilder()
+            .setCustomId(
+                CustomId
+                    .powerSetupOpen(
+                        game.id,
+                    ),
+            )
+            .setLabel(
+                "Configurer mon pouvoir",
+            )
+            .setEmoji(
+                "✨",
+            )
             .setStyle(
                 ButtonStyle.Primary,
             );
@@ -138,5 +152,73 @@ function createActiveControls(
     return new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
             secretButton,
+            roleSetupButton,
+            powerSetupButton,
+        );
+}
+
+function createSecretButton(
+    game: GameSnapshot,
+    label: string,
+): ButtonBuilder {
+    return new ButtonBuilder()
+        .setCustomId(
+            CustomId.secretView(
+                game.id,
+            ),
+        )
+        .setLabel(
+            label,
+        )
+        .setEmoji(
+            "🎭",
+        )
+        .setStyle(
+            ButtonStyle.Secondary,
+        );
+}
+
+function createReadyControls(
+    game: GameSnapshot,
+): ActionRowBuilder<ButtonBuilder> {
+    const secretButton =
+        createSecretButton(
+            game,
+            "Voir mes secrets",
+        );
+
+    const startButton =
+        new ButtonBuilder()
+            .setCustomId(
+                CustomId.lobbyStart(
+                    game.id,
+                ),
+            )
+            .setLabel(
+                "Lancer la partie",
+            )
+            .setEmoji(
+                "▶️",
+            )
+            .setStyle(
+                ButtonStyle.Success,
+            );
+
+    return new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+            secretButton,
+            startButton,
+        );
+}
+
+function createActiveControls(
+    game: GameSnapshot,
+): ActionRowBuilder<ButtonBuilder> {
+    return new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+            createSecretButton(
+                game,
+                "Voir mes secrets",
+            ),
         );
 }

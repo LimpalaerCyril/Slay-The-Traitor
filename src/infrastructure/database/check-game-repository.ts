@@ -30,6 +30,10 @@ import {
     PostgresGameRepository,
 } from "./postgres-game-repository.js";
 
+import {
+    PostgresGameEventRepository,
+} from "./postgres-game-event-repository.js";
+
 loadEnvFile();
 
 const config =
@@ -45,6 +49,11 @@ const {
 
 const repository =
     new PostgresGameRepository(
+        db,
+    );
+
+const eventRepository =
+    new PostgresGameEventRepository(
         db,
     );
 
@@ -93,6 +102,11 @@ try {
 
                 roleCode:
                     "role-a",
+
+                targetPlayerIds: [],
+
+                setupCompleted:
+                    true,
             },
 
             {
@@ -101,6 +115,11 @@ try {
 
                 roleCode:
                     "role-b",
+
+                targetPlayerIds: [],
+
+                setupCompleted:
+                    true,
             },
         ],
 
@@ -181,6 +200,26 @@ try {
                     "PENDING",
             },
         ],
+
+        [
+            {
+                playerId:
+                    "alice",
+
+                powerCode:
+                    "test-power",
+
+                targetPlayerIds: [
+                    "bob",
+                ],
+
+                setupCompleted:
+                    true,
+
+                uses:
+                    1,
+            },
+        ],
     );
 
     game.start();
@@ -207,6 +246,9 @@ try {
         seed:
             "repository-check-seed",
 
+        trackingMode:
+            "MANUAL",
+
         contradiction:
             1,
 
@@ -220,6 +262,76 @@ try {
 
     assert.ok(
         restored,
+    );
+
+    await eventRepository.append({
+        id:
+            `${gameId}-event-1`,
+
+        gameId,
+
+        type:
+            "POWER_USED",
+
+        actNumber:
+            1,
+
+        actorPlayerId:
+            "alice",
+
+        targetPlayerId:
+            "bob",
+
+        payload: {
+            powerCode:
+                "test-power",
+        },
+
+        source:
+            "MANUAL",
+
+        validationStatus:
+            "VERIFIED",
+
+        createdAt:
+            new Date(),
+    });
+
+    /*
+     * On resauvegarde volontairement
+     * l'agrégat après création de l'événement.
+     *
+     * Cela provoque le delete/reinsert des
+     * game_players dans le repository actuel.
+     */
+    await repository.save(
+        restored,
+    );
+
+    const restoredEvents =
+        await eventRepository
+            .findByGameId(
+                gameId,
+            );
+
+    assert.equal(
+        restoredEvents.length,
+        1,
+    );
+
+    assert.equal(
+        restoredEvents[0]?.type,
+        "POWER_USED",
+    );
+
+    assert.equal(
+        restoredEvents[0]?.actorPlayerId,
+        "alice",
+    );
+
+    assert.equal(
+        restoredEvents[0]?.validationStatus,
+        "VERIFIED",
     );
 
     assert.equal(
@@ -237,6 +349,11 @@ try {
     assert.equal(
         restored.lobbyMessageId,
         "repository-check-message",
+    );
+
+    assert.equal(
+        restored.trackingMode,
+        "MANUAL",
     );
 
     assert.equal(

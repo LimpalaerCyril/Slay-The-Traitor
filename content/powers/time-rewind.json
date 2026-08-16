@@ -1,0 +1,11 @@
+{
+    "code": "time-rewind",
+    "name": "Remonter le temps",
+    "description": "Une fois par expédition, permet de recommencer le combat actuel.",
+    "mode": "ACTIVE",
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ],
+    "maxUses": 1
+}

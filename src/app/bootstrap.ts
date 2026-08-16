@@ -1,215 +1,251 @@
 import {
-  loadEnvFile,
+    loadEnvFile,
 } from "node:process";
 
 import {
-  join,
+    join,
 } from "node:path";
 
 import {
-  GameService,
+    GameService,
 } from "../application/game-service/game-service.js";
 
 import {
-  createDiscordClient,
+    createDiscordClient,
 } from "../discord/client.js";
 
 import {
-  loadCharacters,
-  loadCompatibilityRules,
-  loadContradictionBudget,
-  loadObjectives,
-  loadRoles,
+    loadCharacters,
+    loadCompatibilityRules,
+    loadContradictionBudget,
+    loadObjectives,
+    loadRoles,
+    loadPowers,
 } from "../infrastructure/content/content-loader.js";
 
 import {
-  loadConfig,
-  loadDatabaseConfig,
+    loadConfig,
+    loadDatabaseConfig,
 } from "./config.js";
 
 import {
-  sql,
+    sql,
 } from "drizzle-orm";
 
 import {
-  createDatabase,
+    createDatabase,
 } from "../infrastructure/database/database.js";
 
 import {
-  PostgresGameRepository,
+    PostgresGameRepository,
 } from "../infrastructure/database/postgres-game-repository.js";
+
+import {
+    GameEventService,
+} from "../application/game-event-service/game-event-service.js";
+
+import {
+    PostgresGameEventRepository,
+} from "../infrastructure/database/postgres-game-event-repository.js";
 
 loadEnvFile();
 
 const config =
-  loadConfig();
+    loadConfig();
 
 const databaseConfig =
-  loadDatabaseConfig();
+    loadDatabaseConfig();
 
 const contentRoot =
-  join(
-    process.cwd(),
-    "content",
-  );
+    join(
+        process.cwd(),
+        "content",
+    );
 
 console.log(
-  "Chargement du contenu...",
+    "Chargement du contenu...",
 );
 
 const [
-  characters,
-  roles,
-  objectives,
-  compatibilityRules,
-  contradictionBudget,
+    characters,
+    roles,
+    powers,
+    objectives,
+    compatibilityRules,
+    contradictionBudget,
 ] =
-  await Promise.all([
-    loadCharacters(
-      join(
-        contentRoot,
-        "characters",
-      ),
-    ),
+    await Promise.all([
+        loadCharacters(
+            join(
+                contentRoot,
+                "characters",
+            ),
+        ),
 
-    loadRoles(
-      join(
-        contentRoot,
-        "roles",
-      ),
-    ),
+        loadRoles(
+            join(
+                contentRoot,
+                "roles",
+            ),
+        ),
 
-    loadObjectives(
-      join(
-        contentRoot,
-        "objectives",
-      ),
-    ),
+        loadPowers(
+            join(
+                contentRoot,
+                "powers",
+            ),
+        ),
 
-    loadCompatibilityRules(
-      join(
-        contentRoot,
-        "balancing",
-        "compatibility-rules.json",
-      ),
-    ),
+        loadObjectives(
+            join(
+                contentRoot,
+                "objectives",
+            ),
+        ),
 
-    loadContradictionBudget(
-      join(
-        contentRoot,
-        "balancing",
-        "contradiction-budget.json",
-      ),
-    ),
-  ]);
+        loadCompatibilityRules(
+            join(
+                contentRoot,
+                "balancing",
+                "compatibility-rules.json",
+            ),
+        ),
+
+        loadContradictionBudget(
+            join(
+                contentRoot,
+                "balancing",
+                "contradiction-budget.json",
+            ),
+        ),
+    ]);
 
 console.log(
-  [
-    "Contenu chargé :",
-    `${characters.length} personnages,`,
-    `${roles.length} rôles,`,
-    `${objectives.length} objectifs.`,
-  ].join(" "),
+    [
+        "Contenu chargé :",
+        `${characters.length} personnages,`,
+        `${roles.length} rôles,`,
+        `${powers.length} pouvoirs,`,
+        `${objectives.length} objectifs.`,
+    ].join(" "),
 );
 
 console.log(
-  "Connexion à PostgreSQL...",
+    "Connexion à PostgreSQL...",
 );
 
 const {
-  db,
-  pool,
+    db,
+    pool,
 } =
-  createDatabase(
-    databaseConfig.DATABASE_URL,
-  );
+    createDatabase(
+        databaseConfig.DATABASE_URL,
+    );
 
 await db.execute(
-  sql`
+    sql`
     select 1
   `,
 );
 
 console.log(
-  "PostgreSQL connecté.",
+    "PostgreSQL connecté.",
 );
 
 const gameRepository =
-  new PostgresGameRepository(
-    db,
-  );
+    new PostgresGameRepository(
+        db,
+    );
+
+const gameEventRepository =
+    new PostgresGameEventRepository(
+        db,
+    );
 
 const gameService =
-  new GameService(
-    {
-      characters,
-      roles,
-      objectives,
-      compatibilityRules,
-      contradictionBudget,
-    },
+    new GameService(
+        {
+            characters,
+            roles,
+            powers,
+            objectives,
+            compatibilityRules,
+            contradictionBudget,
+        },
 
-    gameRepository,
-  );
+        gameRepository,
+    );
+
+const gameEventService =
+    new GameEventService(
+        {
+            objectives,
+        },
+
+        gameRepository,
+
+        gameEventRepository,
+    );
 
 const discordClient =
-  createDiscordClient({
-    gameService,
-  });
+    createDiscordClient({
+        gameService,
+        gameEventService,
+    });
 
 let shuttingDown =
-  false;
+    false;
 
 async function shutdown(
-  signal: string,
+    signal: string,
 ): Promise<void> {
-  if (
-    shuttingDown
-  ) {
-    return;
-  }
+    if (
+        shuttingDown
+    ) {
+        return;
+    }
 
-  shuttingDown =
-    true;
+    shuttingDown =
+        true;
 
-  console.log(
-    `Arrêt demandé (${signal})...`,
-  );
+    console.log(
+        `Arrêt demandé (${signal})...`,
+    );
 
-  discordClient.destroy();
+    discordClient.destroy();
 
-  await pool.end();
+    await pool.end();
 
-  console.log(
-    "Slay the Traitor arrêté proprement.",
-  );
+    console.log(
+        "Slay the Traitor arrêté proprement.",
+    );
 
-  process.exitCode =
-    0;
+    process.exitCode =
+        0;
 }
 
 process.once(
-  "SIGINT",
-  () => {
-    void shutdown(
-      "SIGINT",
-    );
-  },
+    "SIGINT",
+    () => {
+        void shutdown(
+            "SIGINT",
+        );
+    },
 );
 
 process.once(
-  "SIGTERM",
-  () => {
-    void shutdown(
-      "SIGTERM",
-    );
-  },
+    "SIGTERM",
+    () => {
+        void shutdown(
+            "SIGTERM",
+        );
+    },
 );
 
 console.log(
-  "Connexion à Discord...",
+    "Connexion à Discord...",
 );
 
 await discordClient.login(
-  config.DISCORD_TOKEN,
+    config.DISCORD_TOKEN,
 );

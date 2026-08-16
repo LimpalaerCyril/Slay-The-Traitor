@@ -55,6 +55,14 @@ function createRole(
 
     maximumPlayers:
       4,
+
+    primaryObjectiveCode:
+      "test-primary",
+
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 
@@ -131,6 +139,8 @@ describe(
             players,
 
             roles,
+
+            trackingMode: "MANUAL",
           });
 
         const second =
@@ -141,6 +151,8 @@ describe(
             players,
 
             roles,
+
+            trackingMode: "MANUAL",
           });
 
         expect(
@@ -174,6 +186,8 @@ describe(
               players,
 
               roles,
+
+              trackingMode: "MANUAL",
             });
 
           signatures.add(
@@ -213,6 +227,8 @@ describe(
             ],
 
             roles,
+
+            trackingMode: "MANUAL",
           });
 
         const reversedOrder =
@@ -231,6 +247,8 @@ describe(
             ],
 
             roles,
+            
+            trackingMode: "MANUAL",
           });
 
         expect(

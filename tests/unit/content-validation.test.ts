@@ -14,6 +14,7 @@ import {
     loadContradictionBudget,
     loadObjectives,
     loadRoles,
+    loadPowers,
 } from "../../src/infrastructure/content/content-loader.js";
 
 import {
@@ -44,6 +45,10 @@ import {
     isObjectiveAvailableForPlayerCount,
 } from "../../src/domain/objectives/objective.js";
 
+import {
+    parsePowerDefinition,
+} from "../../src/infrastructure/content/schemas/power-schema.js";
+
 describe("Content validation", () => {
     it("accepts a valid role", () => {
         const role = parseRoleDefinition({
@@ -59,6 +64,14 @@ describe("Content validation", () => {
 
             minimumPlayers: 2,
             maximumPlayers: 4,
+
+            primaryObjectiveCode:
+                "guardian-primary",
+
+            supportedTrackingModes: [
+                "MANUAL",
+                "STS2",
+            ],
         });
 
         expect(role.code).toBe(
@@ -146,8 +159,14 @@ describe("Content validation", () => {
             });
 
         expect(
-            objective.progressRule,
+            objective.rule,
         ).toBeDefined();
+
+        expect(
+            objective.rule?.type,
+        ).toBe(
+            "EVENT_COUNT",
+        );
     });
 
     it("rejects an unknown event type", () => {
@@ -579,4 +598,425 @@ describe("Content validation", () => {
             ).not.toBe("");
         }
     });
+
+    it(
+        "accepts a role with variants instead of a direct primary objective",
+        () => {
+            const role =
+                parseRoleDefinition({
+                    code:
+                        "angel",
+
+                    name:
+                        "Angel",
+
+                    description:
+                        "Choose your path.",
+
+                    alignment:
+                        "SELFISH",
+
+                    tags: [],
+
+                    minimumPlayers:
+                        2,
+
+                    maximumPlayers:
+                        4,
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
+
+                    variants: [
+                        {
+                            code:
+                                "guardian",
+
+                            name:
+                                "Guardian Angel",
+
+                            description:
+                                "Protect a player.",
+
+                            primaryObjectiveCode:
+                                "angel-guardian",
+
+                            targetSelection: {
+                                count:
+                                    1,
+
+                                allowSelf:
+                                    false,
+                            },
+                        },
+
+                        {
+                            code:
+                                "fallen",
+
+                            name:
+                                "Fallen Angel",
+
+                            description:
+                                "Condemn a player.",
+
+                            primaryObjectiveCode:
+                                "angel-fallen",
+
+                            targetSelection: {
+                                count:
+                                    1,
+
+                                allowSelf:
+                                    false,
+                            },
+                        },
+                    ],
+                });
+
+            expect(
+                role.variants,
+            ).toHaveLength(
+                2,
+            );
+
+            expect(
+                role.primaryObjectiveCode,
+            ).toBeUndefined();
+        },
+    );
+
+    it(
+        "rejects a role with both a direct primary objective and variants",
+        () => {
+            expect(() => {
+                parseRoleDefinition({
+                    code:
+                        "invalid-role",
+
+                    name:
+                        "Invalid",
+
+                    description:
+                        "Invalid",
+
+                    alignment:
+                        "LOYAL",
+
+                    tags: [],
+
+                    minimumPlayers:
+                        2,
+
+                    maximumPlayers:
+                        4,
+
+                    primaryObjectiveCode:
+                        "some-primary",
+
+                    variants: [
+                        {
+                            code:
+                                "a",
+
+                            name:
+                                "A",
+
+                            description:
+                                "A",
+
+                            primaryObjectiveCode:
+                                "primary-a",
+                        },
+
+                        {
+                            code:
+                                "b",
+
+                            name:
+                                "B",
+
+                            description:
+                                "B",
+
+                            primaryObjectiveCode:
+                                "primary-b",
+                        },
+                    ],
+                });
+            }).toThrow();
+        },
+    );
+
+    it(
+        "accepts a valid active power",
+        () => {
+            const power =
+                parsePowerDefinition({
+                    code:
+                        "time-rewind",
+
+                    name:
+                        "Time Rewind",
+
+                    description:
+                        "Restart a combat.",
+
+                    mode:
+                        "ACTIVE",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                        "STS2",
+                    ],
+
+                    maxUses:
+                        1,
+                });
+
+            expect(
+                power.mode,
+            ).toBe(
+                "ACTIVE",
+            );
+
+            expect(
+                power.maxUses,
+            ).toBe(
+                1,
+            );
+
+            expect(
+                power.setup,
+            ).toBeUndefined();
+        },
+    );
+
+    it(
+        "accepts a passive power with setup",
+        () => {
+            const power =
+                parsePowerDefinition({
+                    code:
+                        "lovers-bond",
+
+                    name:
+                        "Lovers Bond",
+
+                    description:
+                        "Link two players.",
+
+                    mode:
+                        "PASSIVE",
+
+                    supportedTrackingModes: [
+                        "STS2",
+                    ],
+
+                    setup: {
+                        targetSelection: {
+                            count:
+                                2,
+
+                            allowSelf:
+                                true,
+                        },
+                    },
+                });
+
+            expect(
+                power.mode,
+            ).toBe(
+                "PASSIVE",
+            );
+
+            expect(
+                power.setup
+                    ?.targetSelection
+                    .count,
+            ).toBe(
+                2,
+            );
+
+            expect(
+                power.setup
+                    ?.targetSelection
+                    .allowSelf,
+            ).toBe(
+                true,
+            );
+        },
+    );
+
+    it(
+        "rejects an invalid power mode",
+        () => {
+            expect(() => {
+                parsePowerDefinition({
+                    code:
+                        "invalid",
+
+                    name:
+                        "Invalid",
+
+                    description:
+                        "Invalid",
+
+                    mode:
+                        "SETUP",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                    ],
+                });
+            }).toThrow();
+        },
+    );
+
+    it(
+        "rejects a non-positive power maxUses",
+        () => {
+            expect(() => {
+                parsePowerDefinition({
+                    code:
+                        "invalid",
+
+                    name:
+                        "Invalid",
+
+                    description:
+                        "Invalid",
+
+                    mode:
+                        "ACTIVE",
+
+                    supportedTrackingModes: [
+                        "MANUAL",
+                    ],
+
+                    maxUses:
+                        0,
+                });
+            }).toThrow();
+        },
+    );
+
+    it(
+        "rejects a power setup requiring more than four targets",
+        () => {
+            expect(() => {
+                parsePowerDefinition({
+                    code:
+                        "invalid",
+
+                    name:
+                        "Invalid",
+
+                    description:
+                        "Invalid",
+
+                    mode:
+                        "PASSIVE",
+
+                    supportedTrackingModes: [
+                        "STS2",
+                    ],
+
+                    setup: {
+                        targetSelection: {
+                            count:
+                                5,
+
+                            allowSelf:
+                                true,
+                        },
+                    },
+                });
+            }).toThrow();
+        },
+    );
+
+    it(
+        "accepts a role referencing a power",
+        () => {
+            const role =
+                parseRoleDefinition({
+                    code:
+                        "cupid",
+
+                    name:
+                        "Cupid",
+
+                    description:
+                        "Cupid",
+
+                    alignment:
+                        "LOYAL",
+
+                    tags: [],
+
+                    minimumPlayers:
+                        2,
+
+                    maximumPlayers:
+                        4,
+
+                    primaryObjectiveCode:
+                        "cupid-primary",
+
+                    powerCode:
+                        "lovers-bond",
+
+                    supportedTrackingModes: [
+                        "STS2",
+                    ],
+                });
+
+            expect(
+                role.powerCode,
+            ).toBe(
+                "lovers-bond",
+            );
+        },
+    );
+
+    it(
+        "loads the real power content",
+        async () => {
+            const powers =
+                await loadPowers(
+                    join(
+                        process.cwd(),
+                        "content",
+                        "powers",
+                    ),
+                );
+
+            expect(
+                powers.length,
+            ).toBeGreaterThan(
+                0,
+            );
+
+            const codes =
+                powers.map(
+                    power =>
+                        power.code,
+                );
+
+            expect(
+                codes,
+            ).toContain(
+                "lovers-bond",
+            );
+
+            expect(
+                codes,
+            ).toContain(
+                "time-rewind",
+            );
+        },
+    );
 });

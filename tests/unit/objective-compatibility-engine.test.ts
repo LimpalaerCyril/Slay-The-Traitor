@@ -18,59 +18,59 @@ import type {
 } from "../../src/domain/objectives/objective.js";
 
 const rules:
-readonly ObjectiveCompatibilityRule[] = [
-  {
-    leftTag:
-      "REQUIRES_PLAYER_DEATH",
+  readonly ObjectiveCompatibilityRule[] = [
+    {
+      leftTag:
+        "REQUIRES_PLAYER_DEATH",
 
-    rightTag:
-      "FORBIDS_PLAYER_DEATH",
+      rightTag:
+        "FORBIDS_PLAYER_DEATH",
 
-    samePlayer:
-      "FORBIDDEN",
+      samePlayer:
+        "FORBIDDEN",
 
-    partyContradictionCost: 3,
-  },
+      partyContradictionCost: 3,
+    },
 
-  {
-    leftTag:
-      "REQUIRES_HIGH_GOLD",
+    {
+      leftTag:
+        "REQUIRES_HIGH_GOLD",
 
-    rightTag:
-      "REQUIRES_LOW_GOLD",
+      rightTag:
+        "REQUIRES_LOW_GOLD",
 
-    samePlayer:
-      "FORBIDDEN",
+      samePlayer:
+        "FORBIDDEN",
 
-    partyContradictionCost: 1,
-  },
+      partyContradictionCost: 1,
+    },
 
-  {
-    leftTag:
-      "SABOTAGE",
+    {
+      leftTag:
+        "SABOTAGE",
 
-    rightTag:
-      "PROTECTIVE",
+      rightTag:
+        "PROTECTIVE",
 
-    samePlayer:
-      "ALLOWED",
+      samePlayer:
+        "ALLOWED",
 
-    partyContradictionCost: 2,
-  },
+      partyContradictionCost: 2,
+    },
 
-  {
-    leftTag:
-      "REQUIRES_CURSE",
+    {
+      leftTag:
+        "REQUIRES_CURSE",
 
-    rightTag:
-      "PROTECTIVE",
+      rightTag:
+        "PROTECTIVE",
 
-    samePlayer:
-      "ALLOWED",
+      samePlayer:
+        "ALLOWED",
 
-    partyContradictionCost: 1,
-  },
-];
+      partyContradictionCost: 1,
+    },
+  ];
 
 function createObjective(
   code: string,
@@ -104,6 +104,11 @@ function createObjective(
     score: 100,
 
     hiddenProgress: false,
+
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 

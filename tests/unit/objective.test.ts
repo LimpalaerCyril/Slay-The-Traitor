@@ -37,6 +37,11 @@ function createObjective(
 
         score: 100,
         hiddenProgress: false,
+
+        supportedTrackingModes: [
+            "MANUAL",
+            "STS2",
+        ],
     };
 }
 
@@ -140,7 +145,7 @@ describe("Objective", () => {
                 "PRIMARY",
             ],
 
-            progressRule: {
+            rule: {
                 type: "EVENT_COUNT",
                 eventType: "CURSE_ADDED",
 

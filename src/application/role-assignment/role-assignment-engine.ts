@@ -1,28 +1,23 @@
-import type {
-  GamePlayer,
-} from "../../domain/games/game-player.js";
+import type { GamePlayer } from "../../domain/games/game-player.js";
 
-import type {
-  RoleAssignment,
-} from "../../domain/roles/role-assignment.js";
+import type { RoleAssignment } from "../../domain/roles/role-assignment.js";
 
-import {
-  isRoleAvailableForPlayerCount,
-  type Role,
-} from "../../domain/roles/role.js";
+import { isRoleAvailableForPlayerCount, type Role } from "../../domain/roles/role.js";
 
-import {
-  seededShuffle,
-} from "./seeded-random.js";
+import { seededShuffle } from "./seeded-random.js";
+
+import { GameTrackingMode } from "../../domain/games/game-tracking-mode.js";
 
 export interface AssignRolesInput {
   readonly seed: string;
 
   readonly players:
-    readonly GamePlayer[];
+  readonly GamePlayer[];
 
   readonly roles:
-    readonly Role[];
+  readonly Role[];
+
+  readonly trackingMode: GameTrackingMode;
 }
 
 export function assignRoles(
@@ -79,7 +74,12 @@ export function assignRoles(
           isRoleAvailableForPlayerCount(
             role,
             playerCount,
-          ),
+          )
+          && role
+            .supportedTrackingModes
+            .includes(
+              input.trackingMode,
+            ),
       )
       .sort(
         (
@@ -120,7 +120,7 @@ export function assignRoles(
     );
 
   const assignments:
-  RoleAssignment[] = [];
+    RoleAssignment[] = [];
 
   for (
     let index = 0;
@@ -142,12 +142,21 @@ export function assignRoles(
       );
     }
 
+    const requiresSetup =
+      role.variants !== undefined
+      && role.variants.length > 0;
+
     assignments.push({
       playerId:
         player.id,
 
       roleCode:
         role.code,
+
+      targetPlayerIds: [],
+
+      setupCompleted:
+        !requiresSetup,
     });
   }
 

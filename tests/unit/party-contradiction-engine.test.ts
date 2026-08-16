@@ -115,6 +115,11 @@ function createObjective(
 
     score: 100,
     hiddenProgress: false,
+
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 

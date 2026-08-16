@@ -29,36 +29,36 @@ import type {
 } from "../../src/domain/objectives/objective.js";
 
 const rules:
-readonly ObjectiveCompatibilityRule[] = [
-  {
-    leftTag:
-      "SABOTAGE",
+  readonly ObjectiveCompatibilityRule[] = [
+    {
+      leftTag:
+        "SABOTAGE",
 
-    rightTag:
-      "PROTECTIVE",
+      rightTag:
+        "PROTECTIVE",
 
-    samePlayer:
-      "ALLOWED",
+      samePlayer:
+        "ALLOWED",
 
-    partyContradictionCost: 2,
-  },
+      partyContradictionCost: 2,
+    },
 
-  {
-    leftTag:
-      "REQUIRES_HIGH_GOLD",
+    {
+      leftTag:
+        "REQUIRES_HIGH_GOLD",
 
-    rightTag:
-      "REQUIRES_LOW_GOLD",
+      rightTag:
+        "REQUIRES_LOW_GOLD",
 
-    samePlayer:
-      "FORBIDDEN",
+      samePlayer:
+        "FORBIDDEN",
 
-    partyContradictionCost: 1,
-  },
-];
+      partyContradictionCost: 1,
+    },
+  ];
 
 const budget:
-ContradictionBudget = {
+  ContradictionBudget = {
   "2": {
     minimum: 0,
     maximum: 2,
@@ -127,11 +127,16 @@ function createObjective(
         : 35,
 
     hiddenProgress: false,
+
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 
 function createPlayers():
-GamePlayer[] {
+  GamePlayer[] {
   return [
     createPlayer("alice"),
     createPlayer("bob"),
@@ -140,7 +145,7 @@ GamePlayer[] {
 }
 
 function createObjectives():
-Objective[] {
+  Objective[] {
   return [
     createObjective(
       "sabotage-primary",
@@ -366,7 +371,7 @@ describe(
       ];
 
       const permissiveBudget:
-      ContradictionBudget = {
+        ContradictionBudget = {
         "2": {
           minimum: 0,
           maximum: 10,
@@ -413,7 +418,7 @@ describe(
 
     it("fails when the minimum contradiction cannot be reached", () => {
       const impossibleBudget:
-      ContradictionBudget = {
+        ContradictionBudget = {
         "2": {
           minimum: 10,
           maximum: 20,

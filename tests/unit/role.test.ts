@@ -17,6 +17,11 @@ function createRole(
     tags: [],
     minimumPlayers,
     maximumPlayers,
+    primaryObjectiveCode: "test-primary",
+    supportedTrackingModes: [
+      "MANUAL",
+      "STS2",
+    ],
   };
 }
 

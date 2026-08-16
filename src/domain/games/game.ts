@@ -14,6 +14,14 @@ import type {
     GameState,
 } from "./game-state.js";
 
+import type {
+    GameAct,
+} from "./game-act.js";
+
+import type {
+    PowerAssignment,
+} from "../powers/power-assignment.js";
+
 export interface GameData {
     readonly state:
     GameState;
@@ -27,25 +35,27 @@ export interface GameData {
     readonly objectiveAssignments:
     readonly ObjectiveAssignment[];
 
-    readonly secretAssignmentsPrepared:
-    boolean;
+    readonly secretAssignmentsPrepared: boolean;
+
+    readonly currentAct?: GameAct;
+
+    readonly powerAssignments?: readonly PowerAssignment[];
 }
 
 export class Game {
-    private _state: GameState =
-        "LOBBY";
+    private _state: GameState = "LOBBY";
 
-    private readonly players:
-        GamePlayer[] = [];
+    private readonly players: GamePlayer[] = [];
 
-    private roleAssignments:
-        RoleAssignment[] = [];
+    private roleAssignments: RoleAssignment[] = [];
 
-    private objectiveAssignments:
-        ObjectiveAssignment[] = [];
+    private objectiveAssignments: ObjectiveAssignment[] = [];
 
-    private _secretAssignmentsPrepared =
-        false;
+    private powerAssignments: PowerAssignment[] = [];
+
+    private _secretAssignmentsPrepared = false;
+
+    private _currentAct: GameAct | undefined;
 
     public get state(): GameState {
         return this._state;
@@ -54,6 +64,11 @@ export class Game {
     public get secretAssignmentsPrepared():
         boolean {
         return this._secretAssignmentsPrepared;
+    }
+
+    public get currentAct():
+        GameAct | undefined {
+        return this._currentAct;
     }
 
     public static restore(
@@ -91,8 +106,26 @@ export class Game {
                 }),
             );
 
+        game.powerAssignments =
+            (
+                data.powerAssignments
+                ?? []
+            ).map(
+                assignment => ({
+                    ...assignment,
+
+                    targetPlayerIds: [
+                        ...assignment
+                            .targetPlayerIds,
+                    ],
+                }),
+            );
+
         game._secretAssignmentsPrepared =
             data.secretAssignmentsPrepared;
+
+        game._currentAct =
+            data.currentAct;
 
         game.validateRestoredData();
 
@@ -130,8 +163,31 @@ export class Game {
                     }),
                 ),
 
+            powerAssignments:
+                this.powerAssignments
+                    .map(
+                        assignment => ({
+                            ...assignment,
+
+                            targetPlayerIds: [
+                                ...assignment
+                                    .targetPlayerIds,
+                            ],
+                        }),
+                    ),
+
             secretAssignmentsPrepared:
                 this._secretAssignmentsPrepared,
+
+            ...(
+                this._currentAct
+                    === undefined
+                    ? {}
+                    : {
+                        currentAct:
+                            this._currentAct,
+                    }
+            ),
         };
     }
 
@@ -265,6 +321,61 @@ export class Game {
         };
     }
 
+    public markPlayerDead(
+        playerId:
+            string,
+    ): void {
+        if (
+            this._state !== "ACTIVE"
+            && this._state !== "VOTING"
+        ) {
+            throw new Error(
+                "A player can only die during an active game.",
+            );
+        }
+
+        const index =
+            this.players.findIndex(
+                player =>
+                    player.id
+                    === playerId,
+            );
+
+        const player =
+            this.players[
+            index
+            ];
+
+        if (
+            index < 0
+            || player === undefined
+        ) {
+            throw new Error(
+                `Unknown player: ${playerId}`,
+            );
+        }
+
+        /*
+         * Idempotent :
+         * recevoir deux fois la même information
+         * ne doit pas ressusciter/casser le joueur.
+         */
+        if (
+            !player.alive
+        ) {
+            return;
+        }
+
+        this.players[
+            index
+        ] = {
+            ...player,
+
+            alive:
+                false,
+        };
+    }
+
     public lockRoster(): void {
         if (
             this._state !== "LOBBY"
@@ -291,6 +402,9 @@ export class Game {
 
         objectiveAssignments:
             readonly ObjectiveAssignment[],
+
+        powerAssignments:
+            readonly PowerAssignment[] = [],
     ): void {
         if (
             this._state !== "READY"
@@ -307,6 +421,21 @@ export class Game {
         this.validateObjectiveAssignments(
             objectiveAssignments,
         );
+
+        this.validatePowerAssignments(
+            powerAssignments,
+        );
+
+        if (
+            powerAssignments.some(
+                assignment =>
+                    !assignment.setupCompleted,
+            )
+        ) {
+            throw new Error(
+                "Secret assignments cannot contain an incomplete power setup.",
+            );
+        }
 
         this.roleAssignments =
             roleAssignments.map(
@@ -326,8 +455,23 @@ export class Game {
                 }),
             );
 
+        this.powerAssignments =
+            powerAssignments.map(
+                assignment => ({
+                    ...assignment,
+
+                    targetPlayerIds: [
+                        ...assignment
+                            .targetPlayerIds,
+                    ],
+                }),
+            );
+
         this._secretAssignmentsPrepared =
             true;
+
+        this._currentAct =
+            1;
     }
 
     public start(): void {
@@ -344,6 +488,14 @@ export class Game {
         ) {
             throw new Error(
                 "Secret assignments must be prepared before starting the game.",
+            );
+        }
+
+        if (
+            !this.arePowerSetupsComplete()
+        ) {
+            throw new Error(
+                "Secret assignments cannot contain an incomplete power setup.",
             );
         }
 
@@ -408,6 +560,227 @@ export class Game {
                     },
                 }),
             );
+    }
+
+    public replaceObjectiveAssignment(
+        assignment:
+            ObjectiveAssignment,
+    ): void {
+        const index =
+            this.objectiveAssignments
+                .findIndex(
+                    candidate =>
+                        candidate.playerId
+                        === assignment.playerId
+                        && candidate.objectiveCode
+                        === assignment.objectiveCode
+                        && candidate.objectiveType
+                        === assignment.objectiveType
+                        && candidate.actNumber
+                        === assignment.actNumber,
+                );
+
+        if (
+            index < 0
+        ) {
+            throw new Error(
+                `Unknown objective assignment: ${assignment.playerId}/${assignment.objectiveCode}`,
+            );
+        }
+
+        if (
+            assignment.progress.current
+            < 0
+        ) {
+            throw new Error(
+                "Objective progress cannot be negative.",
+            );
+        }
+
+        if (
+            assignment.progress.target
+            <= 0
+        ) {
+            throw new Error(
+                "Objective progress target must be positive.",
+            );
+        }
+
+        this.objectiveAssignments[
+            index
+        ] = {
+            ...assignment,
+
+            progress: {
+                ...assignment.progress,
+            },
+        };
+    }
+
+    public advanceAct(
+        nextAct:
+            GameAct,
+
+        secondaryAssignments:
+            readonly ObjectiveAssignment[],
+    ): void {
+        if (
+            this._state
+            !== "ACTIVE"
+        ) {
+            throw new Error(
+                "Acts can only advance during an active game.",
+            );
+        }
+
+        const currentAct =
+            this._currentAct;
+
+        if (
+            currentAct === undefined
+        ) {
+            throw new Error(
+                "Cannot advance a game without a current act.",
+            );
+        }
+
+        if (
+            currentAct === 3
+        ) {
+            throw new Error(
+                "Act 3 is already the final act.",
+            );
+        }
+
+        const expectedNextAct:
+            GameAct =
+            currentAct === 1
+                ? 2
+                : 3;
+
+        if (
+            nextAct
+            !== expectedNextAct
+        ) {
+            throw new Error(
+                `Expected act ${expectedNextAct}, received act ${nextAct}.`,
+            );
+        }
+
+        if (
+            secondaryAssignments.length
+            !== this.players.length
+        ) {
+            throw new Error(
+                `Every player must receive a secondary objective for act ${nextAct}.`,
+            );
+        }
+
+        const assignedPlayers =
+            new Set<string>();
+
+        for (
+            const assignment
+            of secondaryAssignments
+        ) {
+            if (
+                assignment.objectiveType
+                !== "SECONDARY"
+            ) {
+                throw new Error(
+                    "Act advancement only accepts secondary objectives.",
+                );
+            }
+
+            if (
+                assignment.actNumber
+                !== nextAct
+            ) {
+                throw new Error(
+                    `Secondary objective must belong to act ${nextAct}.`,
+                );
+            }
+
+            if (
+                assignedPlayers.has(
+                    assignment.playerId,
+                )
+            ) {
+                throw new Error(
+                    `Player ${assignment.playerId} received more than one secondary objective for act ${nextAct}.`,
+                );
+            }
+
+            assignedPlayers.add(
+                assignment.playerId,
+            );
+        }
+
+        const updatedAssignments = [
+            ...this.objectiveAssignments,
+
+            ...secondaryAssignments.map(
+                assignment => ({
+                    ...assignment,
+
+                    progress: {
+                        ...assignment.progress,
+                    },
+                }),
+            ),
+        ];
+
+        this.validateObjectiveAssignments(
+            updatedAssignments,
+        );
+
+        this.objectiveAssignments =
+            updatedAssignments;
+
+        this._currentAct =
+            nextAct;
+    }
+
+    public getPowerAssignments():
+        readonly PowerAssignment[] {
+        return this.powerAssignments
+            .map(
+                assignment => ({
+                    ...assignment,
+
+                    targetPlayerIds: [
+                        ...assignment
+                            .targetPlayerIds,
+                    ],
+                }),
+            );
+    }
+
+    public getPowerAssignmentForPlayer(
+        playerId: string,
+    ): PowerAssignment | undefined {
+        const assignment =
+            this.powerAssignments
+                .find(
+                    candidate =>
+                        candidate.playerId
+                        === playerId,
+                );
+
+        if (
+            assignment === undefined
+        ) {
+            return undefined;
+        }
+
+        return {
+            ...assignment,
+
+            targetPlayerIds: [
+                ...assignment
+                    .targetPlayerIds,
+            ],
+        };
     }
 
     private validateRoleAssignments(
@@ -484,56 +857,19 @@ export class Game {
         assignments:
             readonly ObjectiveAssignment[],
     ): void {
-        if (
-            assignments.length
-            !== this.players.length * 2
-        ) {
-            throw new Error(
-                "Every player must receive one primary and one secondary objective.",
-            );
-        }
-
         const playerIds =
             new Set(
                 this.players.map(
-                    player => player.id,
+                    player =>
+                        player.id,
                 ),
             );
 
-        for (
-            const player
-            of this.players
-        ) {
-            const playerAssignments =
-                assignments.filter(
-                    assignment =>
-                        assignment.playerId
-                        === player.id,
-                );
+        const primaryPlayers =
+            new Set<string>();
 
-            const primaryCount =
-                playerAssignments.filter(
-                    assignment =>
-                        assignment.objectiveType
-                        === "PRIMARY",
-                ).length;
-
-            const secondaryCount =
-                playerAssignments.filter(
-                    assignment =>
-                        assignment.objectiveType
-                        === "SECONDARY",
-                ).length;
-
-            if (
-                primaryCount !== 1
-                || secondaryCount !== 1
-            ) {
-                throw new Error(
-                    `Player ${player.id} must receive exactly one primary and one secondary objective.`,
-                );
-            }
-        }
+        const secondaryKeys =
+            new Set<string>();
 
         for (
             const assignment
@@ -545,8 +881,183 @@ export class Game {
                 )
             ) {
                 throw new Error(
-                    `Unknown player in objective assignment: ${assignment.playerId}`,
+                    `Objective assignment references unknown player: ${assignment.playerId}`,
                 );
+            }
+
+            if (
+                assignment.objectiveType
+                === "PRIMARY"
+            ) {
+                if (
+                    assignment.actNumber
+                    !== undefined
+                ) {
+                    throw new Error(
+                        "A primary objective cannot belong to an act.",
+                    );
+                }
+
+                if (
+                    primaryPlayers.has(
+                        assignment.playerId,
+                    )
+                ) {
+                    throw new Error(
+                        `Player ${assignment.playerId} has more than one primary objective.`,
+                    );
+                }
+
+                primaryPlayers.add(
+                    assignment.playerId,
+                );
+
+                continue;
+            }
+
+            const actNumber =
+                assignment.actNumber
+                ?? 1;
+
+            const key =
+                `${assignment.playerId}:${actNumber}`;
+
+            if (
+                secondaryKeys.has(
+                    key,
+                )
+            ) {
+                throw new Error(
+                    `Player ${assignment.playerId} has more than one secondary objective for act ${actNumber}.`,
+                );
+            }
+
+            secondaryKeys.add(
+                key,
+            );
+        }
+
+        for (
+            const player
+            of this.players
+        ) {
+            if (
+                !primaryPlayers.has(
+                    player.id,
+                )
+            ) {
+                throw new Error(
+                    `Player ${player.id} must have exactly one primary objective.`,
+                );
+            }
+
+            if (
+                !secondaryKeys.has(
+                    `${player.id}:1`,
+                )
+            ) {
+                throw new Error(
+                    `Player ${player.id} must have a secondary objective for act 1.`,
+                );
+            }
+        }
+    }
+
+    private validatePowerAssignments(
+        assignments:
+            readonly PowerAssignment[],
+    ): void {
+        const playerIds =
+            new Set(
+                this.players.map(
+                    player =>
+                        player.id,
+                ),
+            );
+
+        const assignedPlayers =
+            new Set<string>();
+
+        for (
+            const assignment
+            of assignments
+        ) {
+            if (
+                !playerIds.has(
+                    assignment.playerId,
+                )
+            ) {
+                throw new Error(
+                    `Power assignment references unknown player: ${assignment.playerId}`,
+                );
+            }
+
+            if (
+                assignedPlayers.has(
+                    assignment.playerId,
+                )
+            ) {
+                throw new Error(
+                    `Player ${assignment.playerId} has more than one power assignment.`,
+                );
+            }
+
+            assignedPlayers.add(
+                assignment.playerId,
+            );
+
+            if (
+                assignment.powerCode
+                    .trim()
+                    .length === 0
+            ) {
+                throw new Error(
+                    "Power assignment must reference a power code.",
+                );
+            }
+
+            if (
+                !Number.isInteger(
+                    assignment.uses,
+                )
+                || assignment.uses < 0
+            ) {
+                throw new Error(
+                    "Power assignment uses must be a non-negative integer.",
+                );
+            }
+
+            const uniqueTargets =
+                new Set(
+                    assignment
+                        .targetPlayerIds,
+                );
+
+            if (
+                uniqueTargets.size
+                !== assignment
+                    .targetPlayerIds
+                    .length
+            ) {
+                throw new Error(
+                    `Power assignment for player ${assignment.playerId} contains duplicate targets.`,
+                );
+            }
+
+            for (
+                const targetPlayerId
+                of assignment
+                    .targetPlayerIds
+            ) {
+                if (
+                    !playerIds.has(
+                        targetPlayerId,
+                    )
+                ) {
+                    throw new Error(
+                        `Power assignment references unknown target player: ${targetPlayerId}`,
+                    );
+                }
             }
         }
     }
@@ -558,6 +1069,40 @@ export class Game {
         ) {
             throw new Error(
                 "A restored game cannot have more than four players.",
+            );
+        }
+
+        if (
+            this.powerAssignments.length > 0
+        ) {
+            this.validatePowerAssignments(
+                this.powerAssignments,
+            );
+        }
+
+        const stateRequiresCurrentAct =
+            this._state === "READY"
+            || this._state === "ACTIVE"
+            || this._state === "VOTING"
+            || this._state === "FINISHED";
+
+        if (
+            stateRequiresCurrentAct
+            && this._currentAct
+            === undefined
+        ) {
+            throw new Error(
+                "Restored game state requires a current act.",
+            );
+        }
+
+        if (
+            this._state === "LOBBY"
+            && this._currentAct
+            !== undefined
+        ) {
+            throw new Error(
+                "A restored lobby cannot already have a current act.",
             );
         }
 
@@ -611,7 +1156,8 @@ export class Game {
         }
 
         const stateRequiresRoster =
-            this._state === "READY"
+            this._state === "SETUP"
+            || this._state === "READY"
             || this._state === "ACTIVE"
             || this._state === "VOTING"
             || this._state === "FINISHED";
@@ -626,6 +1172,29 @@ export class Game {
         }
 
         if (
+            this._state === "SETUP"
+        ) {
+            this.validateRoleAssignments(
+                this.roleAssignments,
+            );
+
+            if (
+                this.objectiveAssignments
+                    .length > 0
+            ) {
+                throw new Error(
+                    "A setup game cannot already contain objective assignments.",
+                );
+            }
+
+            if (
+                this._secretAssignmentsPrepared
+            ) {
+                throw new Error(
+                    "A setup game cannot already have prepared secret assignments.",
+                );
+            }
+        } else if (
             this._secretAssignmentsPrepared
         ) {
             this.validateRoleAssignments(
@@ -635,12 +1204,21 @@ export class Game {
             this.validateObjectiveAssignments(
                 this.objectiveAssignments,
             );
+
+            if (
+                !this.arePowerSetupsComplete()
+            ) {
+                throw new Error(
+                    "A prepared game cannot contain an incomplete power setup.",
+                );
+            }
         } else if (
             this.roleAssignments.length > 0
             || this.objectiveAssignments.length > 0
+            || this.powerAssignments.length > 0
         ) {
             throw new Error(
-                "Restored game contains secret assignments but is not marked as prepared.",
+                "Restored game contains assignments but is not in a valid prepared state.",
             );
         }
 
@@ -667,5 +1245,275 @@ export class Game {
                 "A restored lobby cannot already contain secret assignments.",
             );
         }
+    }
+
+    public beginSetup(
+        roleAssignments:
+            readonly RoleAssignment[],
+
+        powerAssignments:
+            readonly PowerAssignment[] = [],
+    ): void {
+        if (
+            this._state
+            !== "LOBBY"
+        ) {
+            throw new Error(
+                "Role setup can only begin from the lobby.",
+            );
+        }
+
+        if (
+            this.players.length < 2
+        ) {
+            throw new Error(
+                "At least two players are required.",
+            );
+        }
+
+        this.validateRoleAssignments(
+            roleAssignments,
+        );
+
+        this.validatePowerAssignments(
+            powerAssignments,
+        );
+
+        this.roleAssignments =
+            roleAssignments.map(
+                assignment => ({
+                    ...assignment,
+
+                    targetPlayerIds:
+                        assignment
+                            .targetPlayerIds
+                            === undefined
+                            ? []
+                            : [
+                                ...assignment
+                                    .targetPlayerIds,
+                            ],
+                }),
+            );
+
+        this.objectiveAssignments =
+            [];
+
+        this.powerAssignments =
+            powerAssignments.map(
+                assignment => ({
+                    ...assignment,
+
+                    targetPlayerIds: [
+                        ...assignment
+                            .targetPlayerIds,
+                    ],
+                }),
+            );
+
+        this._secretAssignmentsPrepared =
+            false;
+
+        this._currentAct =
+            undefined;
+
+        this._state =
+            "SETUP";
+    }
+
+    public updateRoleSetup(
+        playerId: string,
+        variantCode: string,
+        targetPlayerIds:
+            readonly string[],
+    ): void {
+        if (
+            this._state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "Role setup can only be changed during SETUP.",
+            );
+        }
+
+        const index =
+            this.roleAssignments
+                .findIndex(
+                    assignment =>
+                        assignment.playerId
+                        === playerId,
+                );
+
+        const current =
+            this.roleAssignments[
+            index
+            ];
+
+        if (
+            index < 0
+            || current === undefined
+        ) {
+            throw new Error(
+                `No role assignment found for player ${playerId}.`,
+            );
+        }
+
+        this.roleAssignments[
+            index
+        ] = {
+            ...current,
+
+            variantCode,
+
+            targetPlayerIds: [
+                ...targetPlayerIds,
+            ],
+
+            setupCompleted:
+                true,
+        };
+    }
+
+    public updatePowerSetup(
+        playerId: string,
+        targetPlayerIds:
+            readonly string[],
+    ): void {
+        if (
+            this._state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "Power setup can only be changed during SETUP.",
+            );
+        }
+
+        const index =
+            this.powerAssignments
+                .findIndex(
+                    assignment =>
+                        assignment.playerId
+                        === playerId,
+                );
+
+        const current =
+            this.powerAssignments[
+            index
+            ];
+
+        if (
+            index < 0
+            || current === undefined
+        ) {
+            throw new Error(
+                `No power assignment found for player ${playerId}.`,
+            );
+        }
+
+        const candidate:
+            PowerAssignment = {
+            ...current,
+
+            targetPlayerIds: [
+                ...targetPlayerIds,
+            ],
+
+            setupCompleted:
+                true,
+        };
+
+        /*
+         * On réutilise les invariants généraux
+         * avant d'accepter la modification.
+         */
+        const updated =
+            [
+                ...this.powerAssignments,
+            ];
+
+        updated[
+            index
+        ] = candidate;
+
+        this.validatePowerAssignments(
+            updated,
+        );
+
+        this.powerAssignments =
+            updated;
+    }
+
+    public arePowerSetupsComplete():
+        boolean {
+        return this.powerAssignments
+            .every(
+                assignment =>
+                    assignment
+                        .setupCompleted,
+            );
+    }
+
+    public areSetupsComplete():
+        boolean {
+        return (
+            this.areRoleSetupsComplete()
+            && this.arePowerSetupsComplete()
+        );
+    }
+
+    public areRoleSetupsComplete():
+        boolean {
+        return this.roleAssignments
+            .every(
+                assignment =>
+                    assignment.setupCompleted
+                    !== false,
+            );
+    }
+
+    public completeSetup(
+        objectiveAssignments:
+            readonly ObjectiveAssignment[],
+    ): void {
+        if (
+            this._state
+            !== "SETUP"
+        ) {
+            throw new Error(
+                "Role setup can only be completed during SETUP.",
+            );
+        }
+
+        if (
+            !this.areSetupsComplete()
+        ) {
+            throw new Error(
+                "Every required setup must be completed before the game becomes ready.",
+            );
+        }
+
+        this.validateObjectiveAssignments(
+            objectiveAssignments,
+        );
+
+        this.objectiveAssignments =
+            objectiveAssignments.map(
+                assignment => ({
+                    ...assignment,
+
+                    progress: {
+                        ...assignment.progress,
+                    },
+                }),
+            );
+
+        this._secretAssignmentsPrepared =
+            true;
+
+        this._currentAct =
+            1;
+
+        this._state =
+            "READY";
     }
 }
