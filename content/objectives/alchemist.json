@@ -1,0 +1,31 @@
+{
+    "code": "alchemist",
+    "name": "Alchimiste",
+    "description": "Utiliser au moins trois potions pendant cet acte.",
+    "category": "RESOURCE",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "POTION_USED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "EVENT_COUNT",
+        "eventType": "POTION_USED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "increment": 1,
+        "requiredCount": 3
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

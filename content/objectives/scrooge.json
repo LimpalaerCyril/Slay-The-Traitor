@@ -1,0 +1,35 @@
+{
+    "code": "scrooge",
+    "name": "Picsou",
+    "description": "Posséder le plus d'or à la fin de cet acte.",
+    "category": "ECONOMY",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "GOLD_CHANGED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "REQUIRES_HIGH_GOLD"
+    ],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "RANKING",
+        "eventType": "GOLD_CHANGED",
+        "participant": "ACTOR",
+        "aggregation": "LATEST",
+        "payloadField": "current",
+        "order": "HIGHEST",
+        "allowTies": true,
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

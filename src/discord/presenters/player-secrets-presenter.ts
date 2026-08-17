@@ -218,19 +218,19 @@ function createPowerBlock(
   if (
     power.power.mode
     === "ACTIVE"
-    && power.power.maxUses
+    && power.power.usageLimit?.maxUses
     !== undefined
   ) {
     const remainingUses =
       Math.max(
         0,
-        power.power.maxUses
+        power.power.usageLimit?.maxUses
         - power.assignment.uses,
       );
 
     lines.push(
       "",
-      `**Utilisations restantes :** ${remainingUses}/${power.power.maxUses}`,
+      `**Utilisations restantes :** ${remainingUses}/${power.power.usageLimit?.maxUses}`,
     );
   }
 

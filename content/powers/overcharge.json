@@ -1,0 +1,22 @@
+{
+    "code": "overcharge",
+    "name": "Surcharge",
+    "description": "Jusqu'à trois fois par acte, au début d'un combat, gagnez 1 énergie supplémentaire pendant votre premier tour.",
+    "mode": "ACTIVE",
+    "supportedTrackingModes": [
+        "STS2"
+    ],
+    "usageLimit": {
+        "scope": "ACT",
+        "maxUses": 3
+    },
+    "activation": {
+        "timing": "COMBAT_START"
+    },
+    "effect": {
+        "type": "GRANT_ENERGY",
+        "amount": 1,
+        "target": "OWNER",
+        "duration": "FIRST_TURN"
+    }
+}

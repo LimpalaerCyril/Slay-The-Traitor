@@ -7,5 +7,14 @@
         "MANUAL",
         "STS2"
     ],
-    "maxUses": 1
+    "usageLimit": {
+        "scope": "GAME",
+        "maxUses": 1
+    },
+    "activation": {
+        "timing": "COMBAT_ACTIVE"
+    },
+    "effect": {
+        "type": "RESTART_COMBAT"
+    }
 }

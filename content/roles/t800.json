@@ -1,0 +1,17 @@
+{
+  "code": "t800",
+  "name": "T800",
+  "description": "Une machine envoyée pour assurer la survie de l'expédition, capable de forcer le destin à recommencer.",
+  "alignment": "LOYAL",
+  "tags": [
+    "PROTECTIVE"
+  ],
+  "minimumPlayers": 2,
+  "maximumPlayers": 4,
+  "primaryObjectiveCode": "t800-survival",
+  "powerCode": "time-rewind",
+  "supportedTrackingModes": [
+    "MANUAL",
+    "STS2"
+  ]
+}

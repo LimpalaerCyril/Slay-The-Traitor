@@ -1,0 +1,38 @@
+{
+    "code": "lovers-survive-act-two",
+    "name": "Jusqu'à ce que la mort nous sépare",
+    "description": "Les deux amoureux doivent être encore vivants à la fin de l'acte 2.",
+    "category": "SURVIVAL",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED",
+        "ACT_COMPLETED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "CONDITION",
+        "operator": "ALL",
+        "conditions": [
+            {
+                "type": "PLAYER_ALIVE",
+                "player": "POWER_TARGET",
+                "expected": true
+            }
+        ],
+        "completeAt": "RESOLUTION",
+        "resolveAt": "ACT_END",
+        "resolveActNumber": 2
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "code": "t800-survival",
+    "name": "I'll be back",
+    "description": "Être encore en vie lorsque l'expédition prend fin.",
+    "category": "SURVIVAL",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED"
+    ],
+    "verificationMode": "MOD_ONLY",
+    "compatibilityTags": [
+        "SURVIVAL",
+        "FORBIDS_PLAYER_DEATH"
+    ],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "FORBIDDEN_EVENT",
+        "eventType": "PLAYER_DIED",
+        "actor": "ANY",
+        "target": "OWNER",
+        "resolveAt": "GAME_END"
+    },
+    "supportedTrackingModes": [
+        "STS2"
+    ]
+}

@@ -587,6 +587,12 @@ export class GameEventService {
                         player.id,
                     );
 
+            const powerAssignment =
+                session.game
+                    .getPowerAssignmentForPlayer(
+                        player.id,
+                    );
+
             for (
                 const assignment
                 of assignments
@@ -652,6 +658,11 @@ export class GameEventService {
 
                         roleTargetPlayerIds:
                             roleAssignment
+                                ?.targetPlayerIds
+                            ?? [],
+
+                        powerTargetPlayerIds:
+                            powerAssignment
                                 ?.targetPlayerIds
                             ?? [],
 

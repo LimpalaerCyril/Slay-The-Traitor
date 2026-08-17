@@ -49,6 +49,13 @@ const resolutionSchema =
         "GAME_END",
     ]);
 
+const gameActSchema =
+    z.union([
+        z.literal(1),
+        z.literal(2),
+        z.literal(3),
+    ]);
+
 const eventCountRuleSchema =
     z.object({
         type:
@@ -202,6 +209,7 @@ const objectiveConditionSchema =
                     z.enum([
                         "OWNER",
                         "ROLE_TARGET",
+                        "POWER_TARGET",
                     ]),
 
                 expected:
@@ -250,7 +258,36 @@ const conditionRuleSchema =
 
         resolveAt:
             resolutionSchema,
-    });
+
+        resolveActNumber:
+            gameActSchema
+                .optional(),
+    })
+        .superRefine(
+            (
+                rule,
+                context,
+            ) => {
+                if (
+                    rule.resolveAt
+                    === "GAME_END"
+                    && rule.resolveActNumber
+                    !== undefined
+                ) {
+                    context.addIssue({
+                        code:
+                            "custom",
+
+                        path: [
+                            "resolveActNumber",
+                        ],
+
+                        message:
+                            "resolveActNumber can only be used with ACT_END.",
+                    });
+                }
+            },
+        );
 
 const forbiddenEventRuleSchema =
     z.object({

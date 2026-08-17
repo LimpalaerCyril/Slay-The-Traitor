@@ -1,0 +1,16 @@
+{
+    "code": "tesla",
+    "name": "Tesla",
+    "description": "Vous canalisez une énergie supplémentaire lorsque l'expédition en a le plus besoin.",
+    "alignment": "LOYAL",
+    "tags": [
+        "PROTECTIVE"
+    ],
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "primaryObjectiveCode": "high-voltage",
+    "powerCode": "overcharge",
+    "supportedTrackingModes": [
+        "STS2"
+    ]
+}

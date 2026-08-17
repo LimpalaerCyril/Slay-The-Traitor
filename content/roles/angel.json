@@ -11,7 +11,7 @@
             "code": "guardian",
             "name": "Ange Gardien",
             "description": "Choisissez un autre joueur à protéger pendant toute l'expédition.",
-            "primaryObjectiveCode": "complete-one-act",
+            "primaryObjectiveCode": "angel-guardian",
             "targetSelection": {
                 "count": 1,
                 "allowSelf": false
@@ -21,11 +21,15 @@
             "code": "fallen",
             "name": "Ange Déchu",
             "description": "Choisissez un autre joueur dont vous souhaitez provoquer la mort.",
-            "primaryObjectiveCode": "complete-one-act",
+            "primaryObjectiveCode": "angel-fallen",
             "targetSelection": {
                 "count": 1,
                 "allowSelf": false
             }
         }
+    ],
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
     ]
 }

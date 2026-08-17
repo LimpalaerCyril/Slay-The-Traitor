@@ -1,0 +1,33 @@
+{
+    "code": "oracle-judgement",
+    "name": "Juger les âmes",
+    "description": "Participer à au moins deux votes au cours de l'expédition.",
+    "category": "INFORMATION",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "VOTE_CAST"
+    ],
+    "verificationMode": "DISCORD",
+    "compatibilityTags": [
+        "INFORMATION"
+    ],
+    "score": 100,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "EVENT_COUNT",
+        "eventType": "VOTE_CAST",
+        "actor": "OWNER",
+        "target": "ANY",
+        "increment": 1,
+        "requiredCount": 2
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

@@ -2,78 +2,133 @@ import type {
     GameTrackingMode,
 } from "../games/game-tracking-mode.js";
 
-import type {
-    PowerMode,
-} from "./power-mode.js";
+export type PowerMode =
+    "ACTIVE"
+    | "PASSIVE";
 
 export interface PowerTargetSelection {
     readonly count:
-        number;
+    number;
 
     readonly allowSelf:
-        boolean;
+    boolean;
 }
 
 export interface PowerSetupDefinition {
     readonly targetSelection:
-        PowerTargetSelection;
+    PowerTargetSelection;
 }
+
+/*
+ * GAME :
+ * limite sur toute l'expédition.
+ *
+ * ACT :
+ * limite remise à zéro à chaque acte.
+ */
+export type PowerUsageScope =
+    "GAME"
+    | "ACT";
+
+export interface PowerUsageLimit {
+    readonly scope:
+    PowerUsageScope;
+
+    readonly maxUses:
+    number;
+}
+
+/*
+ * Fenêtre dans laquelle le pouvoir peut
+ * être déclenché.
+ *
+ * Ces valeurs constituent un contrat avec
+ * le futur bridge STS2.
+ */
+export type PowerActivationTiming =
+    "ANYTIME"
+    | "COMBAT_START"
+    | "COMBAT_ACTIVE"
+    | "CAMPFIRE";
+
+export interface PowerActivationDefinition {
+    readonly timing:
+    PowerActivationTiming;
+
+    /*
+     * Contrairement à setup.targetSelection,
+     * cette cible est choisie AU MOMENT
+     * d'utiliser le pouvoir.
+     */
+    readonly targetSelection?:
+    PowerTargetSelection
+    | undefined;
+}
+
+export interface RestartCombatPowerEffect {
+    readonly type:
+    "RESTART_COMBAT";
+}
+
+export interface BlockCampfireOptionPowerEffect {
+    readonly type:
+    "BLOCK_CAMPFIRE_OPTION";
+
+    readonly option:
+    "REST";
+
+    readonly target:
+    "SELECTED_PLAYER";
+}
+
+export interface GrantEnergyPowerEffect {
+    readonly type:
+    "GRANT_ENERGY";
+
+    readonly amount:
+    number;
+
+    readonly target:
+    "OWNER";
+
+    readonly duration:
+    "FIRST_TURN";
+}
+
+export type PowerEffect =
+    RestartCombatPowerEffect
+    | BlockCampfireOptionPowerEffect
+    | GrantEnergyPowerEffect;
 
 export interface Power {
     readonly code:
-        string;
+    string;
 
     readonly name:
-        string;
+    string;
 
     readonly description:
-        string;
+    string;
 
     readonly mode:
-        PowerMode;
+    PowerMode;
 
     readonly supportedTrackingModes:
-        readonly GameTrackingMode[];
+    readonly GameTrackingMode[];
 
-    /*
-     * Nombre maximal d'activations décidées
-     * par le joueur.
-     *
-     * undefined = pas de limite définie ici.
-     *
-     * Cela sera surtout utilisé par les
-     * pouvoirs ACTIVE.
-     */
-    readonly maxUses?:
-        number
-        | undefined;
+    readonly usageLimit?:
+    PowerUsageLimit
+    | undefined;
 
-    /*
-     * Le setup est indépendant du mode.
-     *
-     * Un pouvoir PASSIVE comme Cupidon
-     * peut parfaitement nécessiter un setup.
-     */
     readonly setup?:
-        PowerSetupDefinition
-        | undefined;
-}
+    PowerSetupDefinition
+    | undefined;
 
-export function isPowerSupportedInTrackingMode(
-    power: Power,
-    trackingMode:
-        GameTrackingMode,
-): boolean {
-    return power
-        .supportedTrackingModes
-        .includes(
-            trackingMode,
-        );
-}
+    readonly activation?:
+    PowerActivationDefinition
+    | undefined;
 
-export function powerRequiresSetup(
-    power: Power,
-): boolean {
-    return power.setup
-        !== undefined;
+    readonly effect?:
+    PowerEffect
+    | undefined;
 }

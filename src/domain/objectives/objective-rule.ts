@@ -2,6 +2,10 @@ import type {
     EventType,
 } from "../events/event-type.js";
 
+import type {
+    GameAct,
+} from "../games/game-act.js";
+
 export type ObjectiveParticipantSelector =
     | "OWNER"
     | "OTHER"
@@ -10,6 +14,7 @@ export type ObjectiveParticipantSelector =
 export type ObjectiveResolution =
     | "ACT_END"
     | "GAME_END";
+
 
 export interface EventCountObjectiveRule {
     readonly type:
@@ -110,8 +115,9 @@ export interface RankingObjectiveRule {
 }
 
 export type ObjectiveConditionPlayer =
-    | "OWNER"
-    | "ROLE_TARGET";
+    "OWNER"
+    | "ROLE_TARGET"
+    | "POWER_TARGET";
 
 export interface PlayerAliveObjectiveCondition {
     readonly type:
@@ -138,15 +144,11 @@ export type ObjectiveCondition =
     | ExpeditionResultObjectiveCondition;
 
 export interface ConditionObjectiveRule {
-    readonly type:
-    "CONDITION";
+    readonly type: "CONDITION";
 
-    readonly operator:
-    "ALL"
-    | "ANY";
+    readonly operator: "ALL" | "ANY";
 
-    readonly conditions:
-    readonly ObjectiveCondition[];
+    readonly conditions: readonly ObjectiveCondition[];
 
     /*
      * IMMEDIATE :
@@ -156,31 +158,32 @@ export interface ConditionObjectiveRule {
      * RESOLUTION :
      * on attend resolveAt pour valider.
      */
-    readonly completeAt:
-    "IMMEDIATE"
-    | "RESOLUTION";
+    readonly completeAt: "IMMEDIATE" | "RESOLUTION";
 
     /*
      * C'est aussi la deadline :
      * si les conditions ne sont pas remplies
      * à ce moment-là, l'objectif échoue.
      */
-    readonly resolveAt:
-    ObjectiveResolution;
+    readonly resolveAt: ObjectiveResolution;
+
+    /*
+     * Utile pour un objectif primaire qui doit
+     * être résolu à la fin d'un acte précis.
+     *
+     * Exemple : Cupidon à la fin de l'acte 2.
+     */
+    readonly resolveActNumber?: GameAct | undefined;
 }
 
 export interface ForbiddenEventObjectiveRule {
-    readonly type:
-    "FORBIDDEN_EVENT";
+    readonly type: "FORBIDDEN_EVENT";
 
-    readonly eventType:
-    EventType;
+    readonly eventType: EventType;
 
-    readonly actor:
-    ObjectiveParticipantSelector;
+    readonly actor: ObjectiveParticipantSelector;
 
-    readonly target:
-    ObjectiveParticipantSelector;
+    readonly target: ObjectiveParticipantSelector;
 
     /*
      * L'événement interdit fait échouer
@@ -189,8 +192,7 @@ export interface ForbiddenEventObjectiveRule {
      * En son absence, l'objectif est réussi
      * à la résolution.
      */
-    readonly resolveAt:
-    ObjectiveResolution;
+    readonly resolveAt: ObjectiveResolution;
 }
 
 export type ObjectiveRule =

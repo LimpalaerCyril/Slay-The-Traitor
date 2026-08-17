@@ -1,0 +1,33 @@
+{
+    "code": "no-one-left-behind",
+    "name": "Pas un de moins",
+    "description": "Aucun membre de l'expédition ne doit mourir avant la fin de la partie.",
+    "category": "PROTECTION",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "PROTECTIVE",
+        "FORBIDS_PLAYER_DEATH"
+    ],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "FORBIDDEN_EVENT",
+        "eventType": "PLAYER_DIED",
+        "actor": "ANY",
+        "target": "ANY",
+        "resolveAt": "GAME_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

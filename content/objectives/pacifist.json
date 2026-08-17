@@ -1,0 +1,30 @@
+{
+    "code": "pacifist",
+    "name": "Pacifiste",
+    "description": "Ne porter aucun coup fatal pendant cet acte.",
+    "category": "RESTRAINT",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "ENEMY_KILLED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "FORBIDDEN_EVENT",
+        "eventType": "ENEMY_KILLED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

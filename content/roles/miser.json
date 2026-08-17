@@ -1,12 +1,16 @@
 {
     "code": "miser",
     "name": "L'Avare",
-    "description": "Vos intérêts personnels sont fortement liés aux ressources de l'expédition.",
+    "description": "Votre intérêt personnel passe avant celui du groupe : terminez l'expédition plus riche que tous les autres.",
     "alignment": "SELFISH",
     "tags": [
         "ECONOMY"
     ],
     "minimumPlayers": 2,
     "maximumPlayers": 4,
-    "primaryObjectiveCode": "complete-one-act"
-}
+    "primaryObjectiveCode": "wealthiest-survivor",
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+} 

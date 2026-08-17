@@ -1,0 +1,32 @@
+{
+    "code": "collector",
+    "name": "Collectionneur",
+    "description": "Obtenir le plus grand nombre de reliques pendant cet acte.",
+    "category": "RESOURCE",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "RELIC_ACQUIRED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "RANKING",
+        "eventType": "RELIC_ACQUIRED",
+        "participant": "ACTOR",
+        "aggregation": "COUNT",
+        "order": "HIGHEST",
+        "allowTies": true,
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

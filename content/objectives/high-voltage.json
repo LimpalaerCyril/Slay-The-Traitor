@@ -1,0 +1,32 @@
+{
+    "code": "high-voltage",
+    "name": "Haute tension",
+    "description": "Utiliser Surcharge dans au moins six combats pendant l'expédition.",
+    "category": "PERFORMANCE",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "POWER_USED"
+    ],
+    "verificationMode": "MOD_ONLY",
+    "compatibilityTags": [
+        "PERFORMANCE"
+    ],
+    "score": 100,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "EVENT_COUNT",
+        "eventType": "POWER_USED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "increment": 1,
+        "requiredCount": 6
+    },
+    "supportedTrackingModes": [
+        "STS2"
+    ]
+}

@@ -1,0 +1,30 @@
+{
+    "code": "potion-saver",
+    "name": "Économe",
+    "description": "Ne consommer aucune potion pendant cet acte.",
+    "category": "RESTRAINT",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "POTION_USED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "FORBIDDEN_EVENT",
+        "eventType": "POTION_USED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

@@ -768,12 +768,26 @@ describe("Content validation", () => {
                         "ACTIVE",
 
                     supportedTrackingModes: [
-                        "MANUAL",
                         "STS2",
                     ],
 
-                    maxUses:
-                        1,
+                    usageLimit: {
+                        scope:
+                            "GAME",
+
+                        maxUses:
+                            1,
+                    },
+
+                    activation: {
+                        timing:
+                            "COMBAT_ACTIVE",
+                    },
+
+                    effect: {
+                        type:
+                            "RESTART_COMBAT",
+                    },
                 });
 
             expect(
@@ -783,10 +797,28 @@ describe("Content validation", () => {
             );
 
             expect(
-                power.maxUses,
-            ).toBe(
-                1,
-            );
+                power.usageLimit,
+            ).toEqual({
+                scope:
+                    "GAME",
+
+                maxUses:
+                    1,
+            });
+
+            expect(
+                power.activation,
+            ).toEqual({
+                timing:
+                    "COMBAT_ACTIVE",
+            });
+
+            expect(
+                power.effect,
+            ).toEqual({
+                type:
+                    "RESTART_COMBAT",
+            });
 
             expect(
                 power.setup,
@@ -876,7 +908,7 @@ describe("Content validation", () => {
     );
 
     it(
-        "rejects a non-positive power maxUses",
+        "rejects a non-positive power usage limit",
         () => {
             expect(() => {
                 parsePowerDefinition({
@@ -893,11 +925,26 @@ describe("Content validation", () => {
                         "ACTIVE",
 
                     supportedTrackingModes: [
-                        "MANUAL",
+                        "STS2",
                     ],
 
-                    maxUses:
-                        0,
+                    usageLimit: {
+                        scope:
+                            "GAME",
+
+                        maxUses:
+                            0,
+                    },
+
+                    activation: {
+                        timing:
+                            "COMBAT_ACTIVE",
+                    },
+
+                    effect: {
+                        type:
+                            "RESTART_COMBAT",
+                    },
                 });
             }).toThrow();
         },
