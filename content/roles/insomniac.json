@@ -1,0 +1,16 @@
+{
+    "code": "insomniac",
+    "name": "L'Insomniaque",
+    "description": "Vous semez l'épuisement dans l'expédition en privant vos compagnons de repos.",
+    "alignment": "CHAOTIC",
+    "tags": [
+        "SABOTAGE"
+    ],
+    "minimumPlayers": 3,
+    "maximumPlayers": 4,
+    "primaryObjectiveCode": "spread-insomnia",
+    "powerCode": "sleep-denial",
+    "supportedTrackingModes": [
+        "STS2"
+    ]
+}

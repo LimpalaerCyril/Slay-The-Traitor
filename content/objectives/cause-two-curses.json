@@ -1,30 +1,30 @@
 {
-  "code": "cause-two-curses",
-  "name": "Influence corruptrice",
-  "description": "Provoquer l'acquisition de deux malédictions par d'autres joueurs.",
-  "category": "SABOTAGE",
-  "difficulty": "HARD",
-  "minimumPlayers": 3,
-  "maximumPlayers": 4,
-  "allowedTypes": [
-    "PRIMARY"
-  ],
-  "requiredEvents": [
-    "CURSE_ADDED"
-  ],
-  "verificationMode": "GROUP_CONFIRMED",
-  "compatibilityTags": [
-    "SABOTAGE",
-    "REQUIRES_CURSE"
-  ],
-  "score": 100,
-  "hiddenProgress": false,
-  "progressRule": {
-    "type": "EVENT_COUNT",
-    "eventType": "CURSE_ADDED",
-    "actor": "OWNER",
-    "target": "OTHER",
-    "increment": 1,
-    "requiredCount": 2
-  }
+    "code": "cause-two-curses",
+    "name": "Influence corruptrice",
+    "description": "Provoquer l'acquisition de deux malédictions par d'autres joueurs.",
+    "category": "SABOTAGE",
+    "difficulty": "HARD",
+    "minimumPlayers": 3,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "CURSE_ADDED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "SABOTAGE",
+        "REQUIRES_CURSE"
+    ],
+    "score": 100,
+    "hiddenProgress": false,
+    "progressRule": {
+        "type": "EVENT_COUNT",
+        "eventType": "CURSE_ADDED",
+        "actor": "OWNER",
+        "target": "OTHER",
+        "increment": 1,
+        "requiredCount": 2
+    }
 }

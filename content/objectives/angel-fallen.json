@@ -1,0 +1,38 @@
+{
+    "code": "angel-fallen",
+    "name": "La chute",
+    "description": "Votre cible doit mourir avant la fin de l'expédition.",
+    "category": "SABOTAGE",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "SABOTAGE"
+    ],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "CONDITION",
+        "operator": "ALL",
+        "conditions": [
+            {
+                "type": "PLAYER_ALIVE",
+                "player": "ROLE_TARGET",
+                "expected": false
+            }
+        ],
+        "completeAt": "IMMEDIATE",
+        "resolveAt": "GAME_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

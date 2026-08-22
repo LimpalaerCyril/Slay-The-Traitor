@@ -1,7 +1,10 @@
 import type { EventType } from "../events/event-type.js";
-import type { ObjectiveProgressRule } from "./objective-event-rule.js";
+import type { ObjectiveRule } from "./objective-rule.js";
 import type { ObjectiveType } from "./objective-type.js";
 import type { VerificationMode } from "./verification-mode.js";
+import type {
+  GameTrackingMode,
+} from "../games/game-tracking-mode.js";
 
 export type ObjectiveDifficulty =
   | "EASY"
@@ -29,7 +32,10 @@ export interface Objective {
   readonly score: number;
   readonly hiddenProgress: boolean;
 
-  readonly progressRule?: ObjectiveProgressRule;
+  readonly rule?: ObjectiveRule;
+
+  readonly supportedTrackingModes:
+  readonly GameTrackingMode[];
 }
 
 export function isObjectiveAvailableForPlayerCount(
@@ -40,4 +46,16 @@ export function isObjectiveAvailableForPlayerCount(
     playerCount >= objective.minimumPlayers
     && playerCount <= objective.maximumPlayers
   );
+}
+
+export function isObjectiveSupportedInTrackingMode(
+  objective: Objective,
+  trackingMode:
+    GameTrackingMode,
+): boolean {
+  return objective
+    .supportedTrackingModes
+    .includes(
+      trackingMode,
+    );
 }

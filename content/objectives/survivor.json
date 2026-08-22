@@ -1,0 +1,32 @@
+{
+    "code": "survivor",
+    "name": "Survivant",
+    "description": "Rester en vie pendant tout cet acte.",
+    "category": "SURVIVAL",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "FORBIDS_PLAYER_DEATH"
+    ],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "FORBIDDEN_EVENT",
+        "eventType": "PLAYER_DIED",
+        "actor": "ANY",
+        "target": "OWNER",
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

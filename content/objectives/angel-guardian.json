@@ -1,0 +1,42 @@
+{
+    "code": "angel-guardian",
+    "name": "Protégé par les cieux",
+    "description": "Votre protégé doit être encore vivant lorsque l'expédition remporte la partie.",
+    "category": "PROTECTION",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "PLAYER_DIED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "PROTECTIVE"
+    ],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "CONDITION",
+        "operator": "ALL",
+        "conditions": [
+            {
+                "type": "PLAYER_ALIVE",
+                "player": "ROLE_TARGET",
+                "expected": true
+            },
+            {
+                "type": "EXPEDITION_RESULT",
+                "result": "WON"
+            }
+        ],
+        "completeAt": "RESOLUTION",
+        "resolveAt": "GAME_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

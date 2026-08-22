@@ -1,11 +1,16 @@
 {
-  "code": "guardian",
-  "name": "Le Gardien",
-  "description": "Vos intérêts sont généralement alignés avec la survie de l'expédition.",
-  "alignment": "LOYAL",
-  "tags": [
-    "PROTECTIVE"
-  ],
-  "minimumPlayers": 2,
-  "maximumPlayers": 4
+    "code": "guardian",
+    "name": "Le Gardien",
+    "description": "Vos intérêts sont liés à la survie de tous les membres de l'expédition.",
+    "alignment": "LOYAL",
+    "tags": [
+        "PROTECTIVE"
+    ],
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "primaryObjectiveCode": "no-one-left-behind",
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
 }

@@ -1,11 +1,35 @@
 {
-  "code": "angel",
-  "name": "L'Ange",
-  "description": "Vous suivez vos propres intérêt, pour le bien de l'expédition, ou pas forcémenet...",
-  "alignment": "SOLO",
-  "tags": [
-    "IDK"
-  ],
-  "minimumPlayers": 2,
-  "maximumPlayers": 4
+    "code": "angel",
+    "name": "L'Ange",
+    "description": "Vous devez choisir entre protéger une âme ou provoquer sa chute.",
+    "alignment": "SELFISH",
+    "tags": [],
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "variants": [
+        {
+            "code": "guardian",
+            "name": "Ange Gardien",
+            "description": "Choisissez un autre joueur à protéger pendant toute l'expédition.",
+            "primaryObjectiveCode": "angel-guardian",
+            "targetSelection": {
+                "count": 1,
+                "allowSelf": false
+            }
+        },
+        {
+            "code": "fallen",
+            "name": "Ange Déchu",
+            "description": "Choisissez un autre joueur dont vous souhaitez provoquer la mort.",
+            "primaryObjectiveCode": "angel-fallen",
+            "targetSelection": {
+                "count": 1,
+                "allowSelf": false
+            }
+        }
+    ],
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
 }

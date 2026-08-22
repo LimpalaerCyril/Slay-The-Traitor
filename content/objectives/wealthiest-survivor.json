@@ -1,0 +1,35 @@
+{
+    "code": "wealthiest-survivor",
+    "name": "Fortune personnelle",
+    "description": "Posséder plus d'or que tous les autres joueurs à la fin de l'expédition.",
+    "category": "ECONOMY",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "GOLD_CHANGED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "REQUIRES_HIGH_GOLD"
+    ],
+    "score": 100,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "RANKING",
+        "eventType": "GOLD_CHANGED",
+        "participant": "ACTOR",
+        "aggregation": "LATEST",
+        "payloadField": "current",
+        "order": "HIGHEST",
+        "allowTies": false,
+        "resolveAt": "GAME_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

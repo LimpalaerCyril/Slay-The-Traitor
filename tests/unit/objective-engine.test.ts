@@ -1,314 +1,437 @@
 import { describe, expect, it } from "vitest";
 
-import { processObjectiveEvent } from "../../src/application/objective-engine/objective-engine.js";
-
 import type { GameEvent } from "../../src/domain/events/game-events.js";
 
-import type {
-    ObjectiveAssignment,
-} from "../../src/domain/objectives/objective-assignments.js";
+import type { GamePlayer } from "../../src/domain/games/game-player.js";
 
-import type {
-    Objective,
-} from "../../src/domain/objectives/objective.js";
+import { createObjectiveAssignment } from "../../src/domain/objectives/objective-assignments.js";
 
-function createCurseObjective(): Objective {
-    return {
-        code: "cause-two-curses",
-        name: "Influence corruptrice",
+import { evaluateObjective } from "../../src/domain/objectives/objective-engine.js";
 
-        description:
-            "Provoquer l'acquisition de deux malédictions par d'autres joueurs.",
+import type { Objective } from "../../src/domain/objectives/objective.js";
 
-        category: "SABOTAGE",
-        difficulty: "HARD",
+import type { ObjectiveRule } from "../../src/domain/objectives/objective-rule.js";
 
-        minimumPlayers: 3,
-        maximumPlayers: 4,
-        
-        allowedTypes: [
-            "PRIMARY",
-        ],
+const players: readonly GamePlayer[] = [
+  {
+    id: "alice",
 
-        requiredEvents: [
-            "CURSE_ADDED",
-        ],
+    discordUserId: "discord-alice",
 
-        verificationMode: "GROUP_CONFIRMED",
+    characterSlug: "silent",
 
-        compatibilityTags: [
-            "SABOTAGE",
-            "REQUIRES_CURSE",
-        ],
+    alive: true,
+  },
 
-        score: 100,
-        hiddenProgress: false,
+  {
+    id: "bob",
 
-        progressRule: {
-            type: "EVENT_COUNT",
+    discordUserId: "discord-bob",
 
-            eventType: "CURSE_ADDED",
+    characterSlug: "ironclad",
 
-            actor: "OWNER",
-            target: "OTHER",
+    alive: true,
+  },
+];
 
-            requiredCount: 2,
-            increment: 1,
-        },
-    };
+function createObjective(
+  rule: ObjectiveRule,
+  type: "PRIMARY" | "SECONDARY" = "PRIMARY",
+): Objective {
+  const requiredEvents = "eventType" in rule ? [rule.eventType] : [];
+
+  return {
+    code: "test-objective",
+
+    name: "Test Objective",
+
+    description: "Test",
+
+    category: "TEST",
+
+    difficulty: "EASY",
+
+    minimumPlayers: 2,
+
+    maximumPlayers: 4,
+
+    allowedTypes: [type],
+
+    requiredEvents,
+
+    verificationMode: "DISCORD",
+
+    compatibilityTags: [],
+
+    score: 100,
+
+    hiddenProgress: false,
+
+    rule,
+
+    supportedTrackingModes: ["MANUAL", "STS2"],
+  };
 }
 
-function createAssignment(): ObjectiveAssignment {
-    return {
-        playerId: "alice",
+function createEvent(overrides: Partial<GameEvent>): GameEvent {
+  return {
+    id: "event-1",
 
-        objectiveCode: "cause-two-curses",
-        objectiveType: "PRIMARY",
+    gameId: "game-1",
 
-        progress: {
-            current: 0,
-            target: 2,
-        },
+    type: "CURSE_ADDED",
 
-        status: "PENDING",
-    };
+    payload: {},
+
+    source: "SYSTEM",
+
+    validationStatus: "VERIFIED",
+
+    createdAt: new Date("2026-01-01T12:00:00Z"),
+
+    ...overrides,
+  };
 }
 
-function createCurseEvent(
-    actorPlayerId: string,
-    targetPlayerId: string,
-    validationStatus: GameEvent["validationStatus"] = "VERIFIED",
-): GameEvent {
-    return {
-        id: "event-1",
-        gameId: "game-1",
+describe("objective engine", () => {
+  it("counts only verified matching events", () => {
+    const objective = createObjective({
+      type: "EVENT_COUNT",
 
-        type: "CURSE_ADDED",
+      eventType: "CURSE_ADDED",
 
-        actorPlayerId,
-        targetPlayerId,
+      actor: "OWNER",
 
-        payload: {
-            curse: "unknown",
+      target: "OTHER",
+
+      increment: 1,
+
+      requiredCount: 2,
+    });
+
+    const assignment = createObjectiveAssignment("alice", objective, "PRIMARY");
+
+    const result = evaluateObjective({
+      objective,
+      assignment,
+
+      players,
+
+      events: [
+        createEvent({
+          id: "event-1",
+
+          actorPlayerId: "alice",
+
+          targetPlayerId: "bob",
+        }),
+
+        createEvent({
+          id: "event-2",
+
+          actorPlayerId: "alice",
+
+          targetPlayerId: "bob",
+
+          validationStatus: "PENDING",
+        }),
+
+        createEvent({
+          id: "event-3",
+
+          actorPlayerId: "bob",
+
+          targetPlayerId: "alice",
+        }),
+      ],
+
+      gameFinished: false,
+    });
+
+    expect(result).toEqual({
+      progress: {
+        current: 1,
+
+        target: 2,
+      },
+
+      status: "IN_PROGRESS",
+    });
+  });
+
+  it("sums numeric payload values", () => {
+    const objective = createObjective({
+      type: "VALUE_SUM",
+
+      eventType: "BLOCK_GRANTED_TO_ALLY",
+
+      actor: "OWNER",
+
+      target: "OTHER",
+
+      payloadField: "amount",
+
+      targetValue: 40,
+    });
+
+    const assignment = createObjectiveAssignment("alice", objective, "PRIMARY");
+
+    const result = evaluateObjective({
+      objective,
+      assignment,
+
+      players,
+
+      events: [
+        createEvent({
+          id: "event-1",
+
+          type: "BLOCK_GRANTED_TO_ALLY",
+
+          actorPlayerId: "alice",
+
+          targetPlayerId: "bob",
+
+          payload: {
+            amount: 15,
+          },
+        }),
+
+        createEvent({
+          id: "event-2",
+
+          type: "BLOCK_GRANTED_TO_ALLY",
+
+          actorPlayerId: "alice",
+
+          targetPlayerId: "bob",
+
+          payload: {
+            amount: 25,
+          },
+        }),
+      ],
+
+      gameFinished: false,
+    });
+
+    expect(result.status).toBe("COMPLETED");
+
+    expect(result.progress).toEqual({
+      current: 40,
+
+      target: 40,
+    });
+  });
+
+  it("resolves a ranking at the end of the game", () => {
+    const objective = createObjective({
+      type: "RANKING",
+
+      eventType: "RELIC_ACQUIRED",
+
+      participant: "ACTOR",
+
+      aggregation: "COUNT",
+
+      order: "HIGHEST",
+
+      allowTies: true,
+
+      resolveAt: "GAME_END",
+    });
+
+    const assignment = createObjectiveAssignment("alice", objective, "PRIMARY");
+
+    const result = evaluateObjective({
+      objective,
+      assignment,
+
+      players,
+
+      events: [
+        createEvent({
+          id: "relic-1",
+
+          type: "RELIC_ACQUIRED",
+
+          actorPlayerId: "alice",
+        }),
+
+        createEvent({
+          id: "relic-2",
+
+          type: "RELIC_ACQUIRED",
+
+          actorPlayerId: "alice",
+        }),
+
+        createEvent({
+          id: "relic-3",
+
+          type: "RELIC_ACQUIRED",
+
+          actorPlayerId: "bob",
+        }),
+      ],
+
+      gameFinished: true,
+    });
+
+    expect(result.status).toBe("COMPLETED");
+  });
+
+  it("evaluates role-target conditions", () => {
+    const objective = createObjective({
+      type: "CONDITION",
+
+      operator: "ALL",
+
+      conditions: [
+        {
+          type: "PLAYER_ALIVE",
+
+          player: "ROLE_TARGET",
+
+          expected: true,
         },
 
-        source: "MANUAL",
-        validationStatus,
+        {
+          type: "EXPEDITION_RESULT",
 
-        createdAt: new Date(
-            "2026-01-01T12:00:00Z",
-        ),
-    };
-}
+          result: "WON",
+        },
+      ],
 
-describe("ObjectiveEngine", () => {
-    it("progresses an objective from a matching verified event", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+      completeAt: "RESOLUTION",
 
-        const event = createCurseEvent(
-            "alice",
-            "bob",
-        );
-
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event,
-        });
-
-        expect(consumed).toBe(true);
-
-        expect(
-            assignment.progress.current,
-        ).toBe(1);
-
-        expect(
-            assignment.status,
-        ).toBe("IN_PROGRESS");
+      resolveAt: "GAME_END",
     });
 
-    it("completes the objective when the target is reached", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+    const assignment = createObjectiveAssignment("alice", objective, "PRIMARY");
 
-        processObjectiveEvent({
-            objective,
-            assignment,
-            event: createCurseEvent(
-                "alice",
-                "bob",
-            ),
-        });
+    const result = evaluateObjective({
+      objective,
+      assignment,
 
-        processObjectiveEvent({
-            objective,
-            assignment,
-            event: createCurseEvent(
-                "alice",
-                "charlie",
-            ),
-        });
+      players,
 
-        expect(
-            assignment.progress.current,
-        ).toBe(2);
+      roleTargetPlayerIds: ["bob"],
 
-        expect(
-            assignment.status,
-        ).toBe("COMPLETED");
+      events: [],
+
+      gameFinished: true,
+
+      expeditionWon: true,
     });
 
-    it("ignores a pending event", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+    expect(result.status).toBe("COMPLETED");
 
-        const event = createCurseEvent(
-            "alice",
-            "bob",
-            "PENDING",
-        );
+    expect(result.progress).toEqual({
+      current: 2,
 
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event,
-        });
+      target: 2,
+    });
+  });
 
-        expect(consumed).toBe(false);
+  it("fails immediately when a forbidden event occurs", () => {
+    const objective = createObjective({
+      type: "FORBIDDEN_EVENT",
 
-        expect(
-            assignment.progress.current,
-        ).toBe(0);
+      eventType: "PLAYER_DIED",
+
+      actor: "ANY",
+
+      target: "OWNER",
+
+      resolveAt: "GAME_END",
     });
 
-    it("ignores an event caused by another player", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+    const assignment = createObjectiveAssignment("alice", objective, "PRIMARY");
 
-        const event = createCurseEvent(
-            "bob",
-            "charlie",
-        );
+    const result = evaluateObjective({
+      objective,
+      assignment,
 
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event,
-        });
+      players,
 
-        expect(consumed).toBe(false);
+      events: [
+        createEvent({
+          id: "death-1",
 
-        expect(
-            assignment.progress.current,
-        ).toBe(0);
+          type: "PLAYER_DIED",
+
+          targetPlayerId: "alice",
+        }),
+      ],
+
+      gameFinished: false,
     });
 
-    it("ignores an event targeting the objective owner", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+    expect(result.status).toBe("FAILED");
+  });
 
-        const event = createCurseEvent(
-            "alice",
-            "alice",
-        );
+  it("ignores events from another act for secondary objectives", () => {
+    const objective = createObjective(
+      {
+        type: "EVENT_COUNT",
 
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event,
-        });
+        eventType: "POTION_USED",
 
-        expect(consumed).toBe(false);
+        actor: "OWNER",
 
-        expect(
-            assignment.progress.current,
-        ).toBe(0);
+        target: "ANY",
+
+        increment: 1,
+
+        requiredCount: 2,
+      },
+
+      "SECONDARY",
+    );
+
+    const assignment = createObjectiveAssignment(
+      "alice",
+      objective,
+      "SECONDARY",
+      1,
+    );
+
+    const result = evaluateObjective({
+      objective,
+      assignment,
+
+      players,
+
+      events: [
+        createEvent({
+          id: "act-1-potion",
+
+          type: "POTION_USED",
+
+          actNumber: 1,
+
+          actorPlayerId: "alice",
+        }),
+
+        createEvent({
+          id: "act-2-potion",
+
+          type: "POTION_USED",
+
+          actNumber: 2,
+
+          actorPlayerId: "alice",
+        }),
+      ],
+
+      gameFinished: false,
     });
 
-    it("ignores an unrelated event type", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
+    expect(result.progress).toEqual({
+      current: 1,
 
-        const event: GameEvent = {
-            id: "event-2",
-            gameId: "game-1",
-
-            type: "GOLD_CHANGED",
-
-            actorPlayerId: "alice",
-
-            payload: {
-                previous: 100,
-                current: 150,
-            },
-
-            source: "MANUAL",
-            validationStatus: "VERIFIED",
-
-            createdAt: new Date(
-                "2026-01-01T12:00:00Z",
-            ),
-        };
-
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event,
-        });
-
-        expect(consumed).toBe(false);
-
-        expect(
-            assignment.progress.current,
-        ).toBe(0);
+      target: 2,
     });
-
-    it("does not progress an already completed objective", () => {
-        const objective = createCurseObjective();
-        const assignment = createAssignment();
-
-        assignment.progress = {
-            current: 2,
-            target: 2,
-        };
-
-        assignment.status = "COMPLETED";
-
-        const consumed = processObjectiveEvent({
-            objective,
-            assignment,
-            event: createCurseEvent(
-                "alice",
-                "bob",
-            ),
-        });
-
-        expect(consumed).toBe(false);
-
-        expect(
-            assignment.progress.current,
-        ).toBe(2);
-    });
-
-    it("rejects an assignment for another objective", () => {
-        const objective = createCurseObjective();
-        const assignment: ObjectiveAssignment = {
-            ...createAssignment(),
-            objectiveCode: "another-objective",
-        };
-
-        expect(() => {
-            processObjectiveEvent({
-                objective,
-                assignment,
-                event: createCurseEvent(
-                    "alice",
-                    "bob",
-                ),
-            });
-        }).toThrow(
-            "Objective assignment does not match objective definition.",
-        );
-    });
+  });
 });

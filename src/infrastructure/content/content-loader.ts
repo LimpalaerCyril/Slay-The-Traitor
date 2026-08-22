@@ -1,199 +1,216 @@
 import {
-  readdir,
-  readFile,
+    readdir,
+    readFile,
 } from "node:fs/promises";
 
 import {
-  join,
+    join,
 } from "node:path";
 
 import type {
-  ObjectiveCompatibilityRule,
+    ObjectiveCompatibilityRule,
 } from "../../domain/objectives/objective-compatibility-rule.js";
 
 import type {
-  Objective,
+    Objective,
 } from "../../domain/objectives/objective.js";
 
 import type {
-  Role,
+    Role,
 } from "../../domain/roles/role.js";
 
+import type {
+    Power,
+} from "../../domain/powers/power.js";
+
 import {
-  parseCompatibilityRules,
+    parseCompatibilityRules,
 } from "./schemas/compatibility-rule-schema.js";
 
 import {
-  parseObjectiveDefinition,
+    parseObjectiveDefinition,
 } from "./schemas/objective-schema.js";
 
 import {
-  parseRoleDefinition,
+    parseRoleDefinition,
 } from "./schemas/role-schema.js";
 
+import {
+    parsePowerDefinition,
+} from "./schemas/power-schema.js";
+
 import type {
-  ContradictionBudget,
+    ContradictionBudget,
 } from "../../domain/objectives/contradiction-budget.js";
 
 import {
-  parseContradictionBudget,
+    parseContradictionBudget,
 } from "./schemas/contradiction-budget-schema.js";
 
 import type {
-  Character,
+    Character,
 } from "../../domain/characters/character.js";
 
 import {
-  parseCharacterDefinition,
+    parseCharacterDefinition,
 } from "./schemas/character-schema.js";
 
 type Parser<T> = (
-  input: unknown,
+    input: unknown,
 ) => T;
 
 async function readJsonFile(
-  filePath: string,
+    filePath: string,
 ): Promise<unknown> {
-  let rawContent: string;
+    let rawContent: string;
 
-  try {
-    rawContent = await readFile(
-      filePath,
-      "utf8",
-    );
-  } catch (error) {
-    throw new Error(
-      `Unable to read content file: ${filePath}`,
-      {
-        cause: error,
-      },
-    );
-  }
+    try {
+        rawContent = await readFile(
+            filePath,
+            "utf8",
+        );
+    } catch (error) {
+        throw new Error(
+            `Unable to read content file: ${filePath}`,
+            {
+                cause: error,
+            },
+        );
+    }
 
-  try {
-    return JSON.parse(
-      rawContent,
-    ) as unknown;
-  } catch (error) {
-    throw new Error(
-      `Invalid JSON in content file: ${filePath}`,
-      {
-        cause: error,
-      },
-    );
-  }
+    try {
+        return JSON.parse(
+            rawContent,
+        ) as unknown;
+    } catch (error) {
+        throw new Error(
+            `Invalid JSON in content file: ${filePath}`,
+            {
+                cause: error,
+            },
+        );
+    }
 }
 
 async function parseContentFile<T>(
-  filePath: string,
-  parser: Parser<T>,
+    filePath: string,
+    parser: Parser<T>,
 ): Promise<T> {
-  const json =
-    await readJsonFile(
-      filePath,
-    );
+    const json =
+        await readJsonFile(
+            filePath,
+        );
 
-  try {
-    return parser(json);
-  } catch (error) {
-    throw new Error(
-      `Invalid content definition: ${filePath}`,
-      {
-        cause: error,
-      },
-    );
-  }
+    try {
+        return parser(json);
+    } catch (error) {
+        throw new Error(
+            `Invalid content definition: ${filePath}`,
+            {
+                cause: error,
+            },
+        );
+    }
 }
 
 async function loadJsonDirectory<T>(
-  directoryPath: string,
-  parser: Parser<T>,
+    directoryPath: string,
+    parser: Parser<T>,
 ): Promise<readonly T[]> {
-  const entries = await readdir(
-    directoryPath,
-    {
-      withFileTypes: true,
-    },
-  );
-
-  const jsonFiles = entries
-    .filter(
-      entry =>
-        entry.isFile()
-        && entry.name.endsWith(
-          ".json",
-        ),
-    )
-    .map(
-      entry => entry.name,
-    )
-    .sort();
-
-  const definitions: T[] = [];
-
-  for (
-    const fileName
-    of jsonFiles
-  ) {
-    const filePath = join(
-      directoryPath,
-      fileName,
+    const entries = await readdir(
+        directoryPath,
+        {
+            withFileTypes: true,
+        },
     );
 
-    definitions.push(
-      await parseContentFile(
-        filePath,
-        parser,
-      ),
-    );
-  }
+    const jsonFiles = entries
+        .filter(
+            entry =>
+                entry.isFile()
+                && entry.name.endsWith(
+                    ".json",
+                ),
+        )
+        .map(
+            entry => entry.name,
+        )
+        .sort();
 
-  return definitions;
+    const definitions: T[] = [];
+
+    for (
+        const fileName
+        of jsonFiles
+    ) {
+        const filePath = join(
+            directoryPath,
+            fileName,
+        );
+
+        definitions.push(
+            await parseContentFile(
+                filePath,
+                parser,
+            ),
+        );
+    }
+
+    return definitions;
 }
 
 export function loadRoles(
-  directoryPath: string,
+    directoryPath: string,
 ): Promise<readonly Role[]> {
-  return loadJsonDirectory(
-    directoryPath,
-    parseRoleDefinition,
-  );
+    return loadJsonDirectory(
+        directoryPath,
+        parseRoleDefinition,
+    );
 }
 
 export function loadObjectives(
-  directoryPath: string,
+    directoryPath: string,
 ): Promise<readonly Objective[]> {
-  return loadJsonDirectory(
-    directoryPath,
-    parseObjectiveDefinition,
-  );
+    return loadJsonDirectory(
+        directoryPath,
+        parseObjectiveDefinition,
+    );
+}
+
+export function loadPowers(
+    directoryPath: string,
+): Promise<readonly Power[]> {
+    return loadJsonDirectory(
+        directoryPath,
+        parsePowerDefinition,
+    );
 }
 
 export function loadCompatibilityRules(
-  filePath: string,
+    filePath: string,
 ): Promise<
-  readonly ObjectiveCompatibilityRule[]
+    readonly ObjectiveCompatibilityRule[]
 > {
-  return parseContentFile(
-    filePath,
-    parseCompatibilityRules,
-  );
+    return parseContentFile(
+        filePath,
+        parseCompatibilityRules,
+    );
 }
 
 export function loadContradictionBudget(
-  filePath: string,
+    filePath: string,
 ): Promise<ContradictionBudget> {
-  return parseContentFile(
-    filePath,
-    parseContradictionBudget,
-  );
+    return parseContentFile(
+        filePath,
+        parseContradictionBudget,
+    );
 }
 
 export function loadCharacters(
-  directoryPath: string,
+    directoryPath: string,
 ): Promise<readonly Character[]> {
-  return loadJsonDirectory(
-    directoryPath,
-    parseCharacterDefinition,
-  );
+    return loadJsonDirectory(
+        directoryPath,
+        parseCharacterDefinition,
+    );
 }

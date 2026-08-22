@@ -30,7 +30,7 @@ import {
 } from "../objective-compatibility/party-contradiction-engine.js";
 
 import {
-    shuffleWithSeed,
+    seededShuffle,
 } from "../role-assignment/seeded-random.js";
 
 export interface GenerateObjectiveCompositionInput {
@@ -343,7 +343,7 @@ export function generateObjectiveComposition(
             ]!;
 
         const candidates =
-            shuffleWithSeed(
+            seededShuffle(
                 objectivePairs,
                 `${seed}:objective-composition:${player.id}`,
             );

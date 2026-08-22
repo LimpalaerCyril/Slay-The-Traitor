@@ -1,0 +1,16 @@
+{
+    "code": "lovers-bond",
+    "name": "Lien amoureux",
+    "description": "Unissez deux joueurs dont le destin restera lié jusqu'à la fin de l'acte 2.",
+    "mode": "PASSIVE",
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ],
+    "setup": {
+        "targetSelection": {
+            "count": 2,
+            "allowSelf": true
+        }
+    }
+}

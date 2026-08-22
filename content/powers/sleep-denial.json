@@ -1,0 +1,25 @@
+{
+    "code": "sleep-denial",
+    "name": "Insomnie",
+    "description": "Une fois par acte, empêchez un autre joueur d'utiliser l'option Repos à un feu de camp.",
+    "mode": "ACTIVE",
+    "supportedTrackingModes": [
+        "STS2"
+    ],
+    "usageLimit": {
+        "scope": "ACT",
+        "maxUses": 1
+    },
+    "activation": {
+        "timing": "CAMPFIRE",
+        "targetSelection": {
+            "count": 1,
+            "allowSelf": false
+        }
+    },
+    "effect": {
+        "type": "BLOCK_CAMPFIRE_OPTION",
+        "option": "REST",
+        "target": "SELECTED_PLAYER"
+    }
+}

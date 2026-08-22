@@ -1,0 +1,32 @@
+{
+    "code": "champion",
+    "name": "Champion",
+    "description": "Obtenir le plus grand nombre de coups fatals pendant cet acte.",
+    "category": "PERFORMANCE",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "ENEMY_KILLED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": true,
+    "rule": {
+        "type": "RANKING",
+        "eventType": "ENEMY_KILLED",
+        "participant": "ACTOR",
+        "aggregation": "COUNT",
+        "order": "HIGHEST",
+        "allowTies": true,
+        "resolveAt": "ACT_END"
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

@@ -5,10 +5,7 @@ import {
   type Role,
 } from "../../src/domain/roles/role.js";
 
-function createRole(
-  minimumPlayers: number,
-  maximumPlayers: number,
-): Role {
+function createRole(minimumPlayers: number, maximumPlayers: number): Role {
   return {
     code: "test-role",
     name: "Test Role",
@@ -17,6 +14,8 @@ function createRole(
     tags: [],
     minimumPlayers,
     maximumPlayers,
+    primaryObjectiveCode: "test-primary",
+    supportedTrackingModes: ["MANUAL", "STS2"],
   };
 }
 

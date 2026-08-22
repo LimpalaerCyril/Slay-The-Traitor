@@ -1,11 +1,16 @@
 {
-  "code": "traitor",
-  "name": "Le Traître",
-  "description": "Vos intérêts peuvent entrer directement en conflit avec ceux de l'expédition.",
-  "alignment": "DISRUPTIVE",
-  "tags": [
-    "SABOTAGE"
-  ],
-  "minimumPlayers": 3,
-  "maximumPlayers": 4
+    "code": "traitor",
+    "name": "Le Traître",
+    "description": "Vous cherchez à corrompre discrètement les autres membres de l'expédition.",
+    "alignment": "DISRUPTIVE",
+    "tags": [
+        "SABOTAGE"
+    ],
+    "minimumPlayers": 3,
+    "maximumPlayers": 4,
+    "primaryObjectiveCode": "cause-two-curses",
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
 }

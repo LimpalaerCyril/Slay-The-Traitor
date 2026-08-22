@@ -1,0 +1,31 @@
+{
+    "code": "savior",
+    "name": "Sauveur",
+    "description": "Accorder au moins 40 points de bloc à vos alliés pendant cet acte.",
+    "category": "SUPPORT",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "BLOCK_GRANTED_TO_ALLY"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [],
+    "score": 35,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "VALUE_SUM",
+        "eventType": "BLOCK_GRANTED_TO_ALLY",
+        "actor": "OWNER",
+        "target": "OTHER",
+        "payloadField": "amount",
+        "targetValue": 40
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}

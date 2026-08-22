@@ -40,9 +40,7 @@ describe("GameEvent", () => {
   it("detects that a pending event is not verified", () => {
     const event = createPendingEvent();
 
-    expect(
-      isVerifiedGameEvent(event),
-    ).toBe(false);
+    expect(isVerifiedGameEvent(event)).toBe(false);
   });
 
   it("verifies a pending event", () => {
@@ -50,9 +48,7 @@ describe("GameEvent", () => {
 
     const verifiedEvent = verifyGameEvent(event);
 
-    expect(
-      verifiedEvent.validationStatus,
-    ).toBe("VERIFIED");
+    expect(verifiedEvent.validationStatus).toBe("VERIFIED");
   });
 
   it("detects a verified event", () => {
@@ -60,9 +56,7 @@ describe("GameEvent", () => {
 
     const verifiedEvent = verifyGameEvent(event);
 
-    expect(
-      isVerifiedGameEvent(verifiedEvent),
-    ).toBe(true);
+    expect(isVerifiedGameEvent(verifiedEvent)).toBe(true);
   });
 
   it("does not mutate the original event when verifying it", () => {
@@ -71,9 +65,7 @@ describe("GameEvent", () => {
     const verifiedEvent = verifyGameEvent(event);
 
     expect(event.validationStatus).toBe("PENDING");
-    expect(
-      verifiedEvent.validationStatus,
-    ).toBe("VERIFIED");
+    expect(verifiedEvent.validationStatus).toBe("VERIFIED");
   });
 
   it("rejects a pending event", () => {
@@ -81,9 +73,7 @@ describe("GameEvent", () => {
 
     const rejectedEvent = rejectGameEvent(event);
 
-    expect(
-      rejectedEvent.validationStatus,
-    ).toBe("REJECTED");
+    expect(rejectedEvent.validationStatus).toBe("REJECTED");
   });
 
   it("cannot verify an already verified event", () => {
@@ -93,9 +83,7 @@ describe("GameEvent", () => {
 
     expect(() => {
       verifyGameEvent(verifiedEvent);
-    }).toThrow(
-      "Only pending events can be verified.",
-    );
+    }).toThrow("Only pending events can be verified.");
   });
 
   it("cannot reject an already verified event", () => {
@@ -105,8 +93,6 @@ describe("GameEvent", () => {
 
     expect(() => {
       rejectGameEvent(verifiedEvent);
-    }).toThrow(
-      "Only pending events can be rejected.",
-    );
+    }).toThrow("Only pending events can be rejected.");
   });
 });

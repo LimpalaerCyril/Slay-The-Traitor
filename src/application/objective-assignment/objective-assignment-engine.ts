@@ -25,7 +25,7 @@ import {
 } from "../objective-compatibility/objective-compatibility-engine.js";
 
 import {
-  shuffleWithSeed,
+  seededShuffle,
 } from "../role-assignment/seeded-random.js";
 
 export interface AssignObjectivesInput {
@@ -227,13 +227,13 @@ export function assignObjectives(
   }
 
   const shuffledPrimary =
-    shuffleWithSeed(
+    seededShuffle(
       primaryCandidates,
       `${seed}:primary`,
     );
 
   const shuffledSecondary =
-    shuffleWithSeed(
+    seededShuffle(
       secondaryCandidates,
       `${seed}:secondary`,
     );

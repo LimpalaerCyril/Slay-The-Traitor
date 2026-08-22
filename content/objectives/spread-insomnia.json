@@ -1,0 +1,32 @@
+{
+    "code": "spread-insomnia",
+    "name": "Nuits blanches",
+    "description": "Utiliser Insomnie au moins deux fois pendant l'expédition.",
+    "category": "SABOTAGE",
+    "difficulty": "MEDIUM",
+    "minimumPlayers": 3,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "PRIMARY"
+    ],
+    "requiredEvents": [
+        "POWER_USED"
+    ],
+    "verificationMode": "MOD_ONLY",
+    "compatibilityTags": [
+        "SABOTAGE"
+    ],
+    "score": 100,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "EVENT_COUNT",
+        "eventType": "POWER_USED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "increment": 1,
+        "requiredCount": 2
+    },
+    "supportedTrackingModes": [
+        "STS2"
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "code": "cursed",
+    "name": "Le Maudit",
+    "description": "Acquérir au moins deux malédictions pendant cet acte.",
+    "category": "CHAOS",
+    "difficulty": "HARD",
+    "minimumPlayers": 2,
+    "maximumPlayers": 4,
+    "allowedTypes": [
+        "SECONDARY"
+    ],
+    "requiredEvents": [
+        "CURSE_ADDED"
+    ],
+    "verificationMode": "GROUP_CONFIRMED",
+    "compatibilityTags": [
+        "REQUIRES_CURSE"
+    ],
+    "score": 35,
+    "hiddenProgress": false,
+    "rule": {
+        "type": "EVENT_COUNT",
+        "eventType": "CURSE_ADDED",
+        "actor": "OWNER",
+        "target": "ANY",
+        "increment": 1,
+        "requiredCount": 2
+    },
+    "supportedTrackingModes": [
+        "MANUAL",
+        "STS2"
+    ]
+}
