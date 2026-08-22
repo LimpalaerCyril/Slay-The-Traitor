@@ -1,189 +1,125 @@
-import {
-    sql,
-} from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 import {
-    boolean,
-    check,
-    foreignKey,
-    index,
-    integer,
-    jsonb,
-    pgEnum,
-    pgTable,
-    primaryKey,
-    serial,
-    text,
-    timestamp,
-    unique,
-    uniqueIndex,
+  boolean,
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  serial,
+  text,
+  bigint,
+  timestamp,
+  unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import type {
-    EventPayload,
-} from "../../domain/events/game-events.js";
+import type { EventPayload } from "../../domain/events/game-events.js";
 
-import type {
-    EventType,
-} from "../../domain/events/event-type.js";
+import type { EventType } from "../../domain/events/event-type.js";
 
-export const gameStateEnum =
-    pgEnum(
-        "game_state",
-        [
-            "LOBBY",
-            "SETUP",
-            "READY",
-            "ACTIVE",
-            "VOTING",
-            "FINISHED",
-            "CANCELLED",
-        ],
-    );
+export const gameStateEnum = pgEnum("game_state", [
+  "LOBBY",
+  "SETUP",
+  "READY",
+  "ACTIVE",
+  "VOTING",
+  "FINISHED",
+  "CANCELLED",
+]);
 
-export const gameTrackingModeEnum =
-    pgEnum(
-        "game_tracking_mode",
-        [
-            "MANUAL",
-            "STS2",
-        ],
-    );
+export const gameTrackingModeEnum = pgEnum("game_tracking_mode", [
+  "MANUAL",
+  "STS2",
+]);
 
-export const gameEventSourceEnum =
-    pgEnum(
-        "game_event_source",
-        [
-            "DISCORD",
-            "MANUAL",
-            "MOD",
-            "SYSTEM",
-        ],
-    );
+export const bridgePlatformEnum = pgEnum("bridge_platform", ["STEAM"]);
 
-export const gameEventValidationStatusEnum =
-    pgEnum(
-        "game_event_validation_status",
-        [
-            "PENDING",
-            "VERIFIED",
-            "REJECTED",
-        ],
-    );
+export const gameEventSourceEnum = pgEnum("game_event_source", [
+  "DISCORD",
+  "MANUAL",
+  "MOD",
+  "SYSTEM",
+]);
 
-export const objectiveTypeEnum =
-    pgEnum(
-        "objective_type",
-        [
-            "PRIMARY",
-            "SECONDARY",
-        ],
-    );
+export const gameEventValidationStatusEnum = pgEnum(
+  "game_event_validation_status",
+  ["PENDING", "VERIFIED", "REJECTED"],
+);
 
-export const objectiveStatusEnum =
-    pgEnum(
-        "objective_status",
-        [
-            "PENDING",
-            "IN_PROGRESS",
-            "COMPLETED",
-            "FAILED",
-        ],
-    );
+export const objectiveTypeEnum = pgEnum("objective_type", [
+  "PRIMARY",
+  "SECONDARY",
+]);
 
-export const gamesTable =
-    pgTable(
-        "games",
-        {
-            id:
-                text("id")
-                    .primaryKey(),
+export const objectiveStatusEnum = pgEnum("objective_status", [
+  "PENDING",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "FAILED",
+]);
 
-            guildId:
-                text("guild_id")
-                    .notNull(),
+export const gamesTable = pgTable(
+  "games",
+  {
+    id: text("id").primaryKey(),
 
-            textChannelId:
-                text("text_channel_id")
-                    .notNull(),
+    guildId: text("guild_id").notNull(),
 
-            voiceChannelId:
-                text("voice_channel_id"),
+    textChannelId: text("text_channel_id").notNull(),
 
-            lobbyMessageId:
-                text("lobby_message_id"),
+    voiceChannelId: text("voice_channel_id"),
 
-            hostDiscordUserId:
-                text("host_discord_user_id")
-                    .notNull(),
+    lobbyMessageId: text("lobby_message_id"),
 
-            seed:
-                text("seed")
-                    .notNull(),
+    hostDiscordUserId: text("host_discord_user_id").notNull(),
 
-            trackingMode:
-                gameTrackingModeEnum(
-                    "tracking_mode",
-                )
-                    .notNull()
-                    .default("MANUAL"),
+    seed: text("seed").notNull(),
 
-            state:
-                gameStateEnum("state")
-                    .notNull()
-                    .default("LOBBY"),
+    trackingMode: gameTrackingModeEnum("tracking_mode")
+      .notNull()
+      .default("MANUAL"),
 
-            contradiction:
-                integer("contradiction"),
+    state: gameStateEnum("state").notNull().default("LOBBY"),
 
-            createdAt:
-                timestamp(
-                    "created_at",
-                    {
-                        withTimezone: true,
-                    },
-                )
-                    .notNull()
-                    .defaultNow(),
+    contradiction: integer("contradiction"),
 
-            updatedAt:
-                timestamp(
-                    "updated_at",
-                    {
-                        withTimezone: true,
-                    },
-                )
-                    .notNull()
-                    .defaultNow(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
 
-            currentAct:
-                integer(
-                    "current_act",
-                ),
-        },
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
 
-        table => [
-            uniqueIndex(
-                "games_open_channel_unique",
-            )
-                .on(
-                    table.guildId,
-                    table.textChannelId,
-                )
-                .where(
-                    sql`
+    currentAct: integer("current_act"),
+  },
+
+  (table) => [
+    uniqueIndex("games_open_channel_unique")
+      .on(table.guildId, table.textChannelId)
+      .where(
+        sql`
                         ${table.state}
                         NOT IN (
                         'FINISHED',
                         'CANCELLED'
                         )
                     `,
-                ),
+      ),
 
-            check(
-                "games_current_act_valid",
+    check(
+      "games_current_act_valid",
 
-                sql`
+      sql`
                     ${table.currentAct}
                     IS NULL
                     OR (
@@ -191,181 +127,104 @@ export const gamesTable =
                     AND ${table.currentAct} <= 3
                     )
                 `,
-            ),
-        ],
-    );
+    ),
+  ],
+);
 
-export const gamePlayersTable =
-    pgTable(
-        "game_players",
-        {
-            gameId:
-                text("game_id")
-                    .notNull()
-                    .references(
-                        () =>
-                            gamesTable.id,
-                        {
-                            onDelete:
-                                "cascade",
-                        },
-                    ),
+export const gamePlayersTable = pgTable(
+  "game_players",
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(() => gamesTable.id, {
+        onDelete: "cascade",
+      }),
 
-            playerId:
-                text("player_id")
-                    .notNull(),
+    playerId: text("player_id").notNull(),
 
-            discordUserId:
-                text("discord_user_id")
-                    .notNull(),
+    discordUserId: text("discord_user_id").notNull(),
 
-            characterSlug:
-                text("character_slug")
-                    .notNull(),
+    characterSlug: text("character_slug").notNull(),
 
-            alive:
-                boolean("alive")
-                    .notNull()
-                    .default(true),
+    alive: boolean("alive").notNull().default(true),
 
-            position:
-                integer("position")
-                    .notNull(),
-        },
+    position: integer("position").notNull(),
+  },
 
-        table => [
-            primaryKey({
-                name:
-                    "game_players_pk",
+  (table) => [
+    primaryKey({
+      name: "game_players_pk",
 
-                columns: [
-                    table.gameId,
-                    table.playerId,
-                ],
-            }),
+      columns: [table.gameId, table.playerId],
+    }),
 
-            unique(
-                "game_players_discord_user_unique",
-            ).on(
-                table.gameId,
-                table.discordUserId,
-            ),
+    unique("game_players_discord_user_unique").on(
+      table.gameId,
+      table.discordUserId,
+    ),
 
-            unique(
-                "game_players_position_unique",
-            ).on(
-                table.gameId,
-                table.position,
-            ),
+    unique("game_players_position_unique").on(table.gameId, table.position),
 
-            check(
-                "game_players_position_non_negative",
+    check(
+      "game_players_position_non_negative",
 
-                sql`
+      sql`
                     ${table.position} >= 0
                 `,
-            ),
-        ],
-    );
+    ),
+  ],
+);
 
-export const gameEventsTable =
-    pgTable(
-        "game_events",
-        {
-            id:
-                text("id")
-                    .primaryKey(),
+export const gameEventsTable = pgTable(
+  "game_events",
+  {
+    id: text("id").primaryKey(),
 
-            gameId:
-                text("game_id")
-                    .notNull()
-                    .references(
-                        () =>
-                            gamesTable.id,
-                        {
-                            onDelete:
-                                "cascade",
-                        },
-                    ),
+    gameId: text("game_id")
+      .notNull()
+      .references(() => gamesTable.id, {
+        onDelete: "cascade",
+      }),
 
-            eventType:
-                text("event_type")
-                    .$type<EventType>()
-                    .notNull(),
+    eventType: text("event_type").$type<EventType>().notNull(),
 
-            actNumber:
-                integer(
-                    "act_number",
-                ),
+    actNumber: integer("act_number"),
 
-            actorPlayerId:
-                text(
-                    "actor_player_id",
-                ),
+    actorPlayerId: text("actor_player_id"),
 
-            targetPlayerId:
-                text(
-                    "target_player_id",
-                ),
+    targetPlayerId: text("target_player_id"),
 
-            payload:
-                jsonb(
-                    "payload",
-                )
-                    .$type<EventPayload>()
-                    .notNull()
-                    .default(
-                        sql`
+    payload: jsonb("payload")
+      .$type<EventPayload>()
+      .notNull()
+      .default(
+        sql`
                             '{}'::jsonb
                         `,
-                    ),
+      ),
 
-            source:
-                gameEventSourceEnum(
-                    "source",
-                )
-                    .notNull(),
+    source: gameEventSourceEnum("source").notNull(),
 
-            validationStatus:
-                gameEventValidationStatusEnum(
-                    "validation_status",
-                )
-                    .notNull()
-                    .default(
-                        "PENDING",
-                    ),
+    validationStatus: gameEventValidationStatusEnum("validation_status")
+      .notNull()
+      .default("PENDING"),
 
-            createdAt:
-                timestamp(
-                    "created_at",
-                    {
-                        withTimezone:
-                            true,
-                    },
-                )
-                    .notNull()
-                    .defaultNow(),
-        },
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
 
-        table => [
-            index(
-                "game_events_game_created_at_idx",
-            ).on(
-                table.gameId,
-                table.createdAt,
-            ),
+  (table) => [
+    index("game_events_game_created_at_idx").on(table.gameId, table.createdAt),
 
-            index(
-                "game_events_game_type_idx",
-            ).on(
-                table.gameId,
-                table.eventType,
-            ),
+    index("game_events_game_type_idx").on(table.gameId, table.eventType),
 
-            check(
-                "game_events_act_number_valid",
+    check(
+      "game_events_act_number_valid",
 
-                sql`
+      sql`
                     ${table.actNumber}
                     IS NULL
                     OR (
@@ -373,192 +232,247 @@ export const gameEventsTable =
                         AND ${table.actNumber} <= 3
                     )
                 `,
-            ),
-        ],
-    );
+    ),
+  ],
+);
 
-export const roleAssignmentsTable =
+export const sts2BridgeEventReceiptsTable =
     pgTable(
-        "role_assignments",
+        "sts2_bridge_event_receipts",
         {
-            gameId:
-                text("game_id")
+            bridgeSessionId:
+                text(
+                    "bridge_session_id",
+                )
                     .notNull()
                     .references(
                         () =>
-                            gamesTable.id,
+                            sts2BridgeSessionsTable.id,
                         {
                             onDelete:
                                 "cascade",
                         },
                     ),
 
-            playerId:
-                text("player_id")
-                    .notNull(),
+            identityLinkId:
+                integer(
+                    "identity_link_id",
+                )
+                    .notNull()
+                    .references(
+                        () =>
+                            platformIdentityLinksTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
 
-            roleCode:
-                text("role_code")
-                    .notNull(),
-
-            variantCode:
+            clientInstanceId:
                 text(
-                    "variant_code",
+                    "client_instance_id",
+                )
+                    .notNull(),
+
+            sequence:
+                bigint(
+                    "sequence",
+                    {
+                        mode:
+                            "number",
+                    },
+                )
+                    .notNull(),
+
+            eventType:
+                text(
+                    "event_type",
+                )
+                    .notNull(),
+
+            eventFingerprint:
+                text(
+                    "event_fingerprint",
+                )
+                    .notNull(),
+
+            disposition:
+                text(
+                    "disposition",
+                )
+                    .notNull(),
+
+            ignoredReason:
+                text(
+                    "ignored_reason",
                 ),
 
-            targetPlayerIds:
-                jsonb(
-                    "target_player_ids",
+            gameEventId:
+                text(
+                    "game_event_id",
                 )
-                    .$type<string[]>()
-                    .notNull()
-                    .default(
-                        sql`
-                            '[]'::jsonb
-                        `,
+                    .references(
+                        () =>
+                            gameEventsTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
                     ),
 
-            setupCompleted:
-                boolean(
-                    "setup_completed",
+            receivedAt:
+                timestamp(
+                    "received_at",
+                    {
+                        withTimezone:
+                            true,
+                    },
                 )
-                    .notNull()
-                    .default(
-                        true,
-                    ),
+                    .notNull(),
         },
 
         table => [
             primaryKey({
                 name:
-                    "role_assignments_pk",
+                    "sts2_bridge_event_receipts_pk",
 
                 columns: [
-                    table.gameId,
-                    table.playerId,
+                    table.bridgeSessionId,
+                    table.identityLinkId,
+                    table.clientInstanceId,
+                    table.sequence,
                 ],
             }),
 
-            unique(
-                "role_assignments_role_unique",
-            ).on(
-                table.gameId,
-                table.roleCode,
+            check(
+                "sts2_bridge_event_receipts_sequence_positive",
+                sql`
+                    ${table.sequence} > 0
+                `,
             ),
 
-            foreignKey({
-                name:
-                    "role_assignments_player_fk",
+            check(
+                "sts2_bridge_event_receipts_disposition_valid",
+                sql`
+                    ${table.disposition}
+                    IN ('ACCEPTED', 'IGNORED')
+                `,
+            ),
 
-                columns: [
-                    table.gameId,
-                    table.playerId,
-                ],
-
-                foreignColumns: [
-                    gamePlayersTable.gameId,
-                    gamePlayersTable.playerId,
-                ],
-            }),
+            check(
+                "sts2_bridge_event_receipts_consistency",
+                sql`
+                    (
+                        ${table.disposition} = 'ACCEPTED'
+                        AND ${table.gameEventId} IS NOT NULL
+                        AND ${table.ignoredReason} IS NULL
+                    )
+                    OR
+                    (
+                        ${table.disposition} = 'IGNORED'
+                        AND ${table.gameEventId} IS NULL
+                        AND ${table.ignoredReason} IS NOT NULL
+                    )
+                `,
+            ),
         ],
     );
 
-export const objectiveAssignmentsTable =
-    pgTable(
-        "objective_assignments",
-        {
-            id:
-                serial(
-                    "id",
-                )
-                    .primaryKey(),
+export const roleAssignmentsTable = pgTable(
+  "role_assignments",
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(() => gamesTable.id, {
+        onDelete: "cascade",
+      }),
 
-            gameId:
-                text("game_id")
-                    .notNull()
-                    .references(
-                        () =>
-                            gamesTable.id,
-                        {
-                            onDelete:
-                                "cascade",
-                        },
-                    ),
+    playerId: text("player_id").notNull(),
 
-            playerId:
-                text("player_id")
-                    .notNull(),
+    roleCode: text("role_code").notNull(),
 
-            objectiveType:
-                objectiveTypeEnum(
-                    "objective_type",
-                )
-                    .notNull(),
+    variantCode: text("variant_code"),
 
-            objectiveCode:
-                text("objective_code")
-                    .notNull(),
+    targetPlayerIds: jsonb("target_player_ids")
+      .$type<string[]>()
+      .notNull()
+      .default(
+        sql`
+                            '[]'::jsonb
+                        `,
+      ),
 
-            progressCurrent:
-                integer(
-                    "progress_current",
-                )
-                    .notNull()
-                    .default(0),
+    setupCompleted: boolean("setup_completed").notNull().default(true),
+  },
 
-            progressTarget:
-                integer(
-                    "progress_target",
-                )
-                    .notNull(),
+  (table) => [
+    primaryKey({
+      name: "role_assignments_pk",
 
-            status:
-                objectiveStatusEnum(
-                    "status",
-                )
-                    .notNull()
-                    .default("PENDING"),
+      columns: [table.gameId, table.playerId],
+    }),
 
-            actNumber:
-                integer(
-                    "act_number",
-                ),
-        },
+    unique("role_assignments_role_unique").on(table.gameId, table.roleCode),
 
-        table => [
-            uniqueIndex(
-                "objective_assignments_primary_unique",
-            )
-                .on(
-                    table.gameId,
-                    table.playerId,
-                )
-                .where(
-                    sql`
+    foreignKey({
+      name: "role_assignments_player_fk",
+
+      columns: [table.gameId, table.playerId],
+
+      foreignColumns: [gamePlayersTable.gameId, gamePlayersTable.playerId],
+    }),
+  ],
+);
+
+export const objectiveAssignmentsTable = pgTable(
+  "objective_assignments",
+  {
+    id: serial("id").primaryKey(),
+
+    gameId: text("game_id")
+      .notNull()
+      .references(() => gamesTable.id, {
+        onDelete: "cascade",
+      }),
+
+    playerId: text("player_id").notNull(),
+
+    objectiveType: objectiveTypeEnum("objective_type").notNull(),
+
+    objectiveCode: text("objective_code").notNull(),
+
+    progressCurrent: integer("progress_current").notNull().default(0),
+
+    progressTarget: integer("progress_target").notNull(),
+
+    status: objectiveStatusEnum("status").notNull().default("PENDING"),
+
+    actNumber: integer("act_number"),
+  },
+
+  (table) => [
+    uniqueIndex("objective_assignments_primary_unique")
+      .on(table.gameId, table.playerId)
+      .where(
+        sql`
                         ${table.objectiveType}
                         = 'PRIMARY'
                     `,
-                ),
+      ),
 
-            uniqueIndex(
-                "objective_assignments_secondary_act_unique",
-            )
-                .on(
-                    table.gameId,
-                    table.playerId,
-                    table.actNumber,
-                )
-                .where(
-                    sql`
+    uniqueIndex("objective_assignments_secondary_act_unique")
+      .on(table.gameId, table.playerId, table.actNumber)
+      .where(
+        sql`
                         ${table.objectiveType}
                         = 'SECONDARY'
                     `,
-                ),
+      ),
 
-            check(
-                "objective_assignments_scope_valid",
+    check(
+      "objective_assignments_scope_valid",
 
-                sql`
+      sql`
                     (
                     ${table.objectiveType} = 'PRIMARY'
                     AND ${table.actNumber} IS NULL
@@ -569,121 +483,298 @@ export const objectiveAssignmentsTable =
                     AND ${table.actNumber} BETWEEN 1 AND 3
                     )
                 `,
-            ),
+    ),
 
-            foreignKey({
-                name:
-                    "objective_assignments_player_fk",
+    foreignKey({
+      name: "objective_assignments_player_fk",
 
-                columns: [
-                    table.gameId,
-                    table.playerId,
-                ],
+      columns: [table.gameId, table.playerId],
 
-                foreignColumns: [
-                    gamePlayersTable.gameId,
-                    gamePlayersTable.playerId,
-                ],
-            }),
+      foreignColumns: [gamePlayersTable.gameId, gamePlayersTable.playerId],
+    }),
 
-            check(
-                "objective_progress_current_non_negative",
+    check(
+      "objective_progress_current_non_negative",
 
-                sql`
+      sql`
                     ${table.progressCurrent} >= 0
                 `,
-            ),
+    ),
 
-            check(
-                "objective_progress_target_positive",
+    check(
+      "objective_progress_target_positive",
 
-                sql`
+      sql`
                     ${table.progressTarget} > 0
                 `,
-            ),
-        ],
-    );
+    ),
+  ],
+);
 
-export const powerAssignmentsTable =
-    pgTable(
-        "power_assignments",
+export const powerAssignmentsTable = pgTable(
+  "power_assignments",
+
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(
+        () => gamesTable.id,
 
         {
-            gameId:
-                text(
-                    "game_id",
-                )
-                    .notNull()
-                    .references(
-                        () =>
-                            gamesTable.id,
+          onDelete: "cascade",
+        },
+      ),
 
-                        {
-                            onDelete:
-                                "cascade",
-                        },
-                    ),
+    playerId: text("player_id").notNull(),
 
-            playerId:
-                text(
-                    "player_id",
-                )
-                    .notNull(),
+    powerCode: text("power_code").notNull(),
 
-            powerCode:
-                text(
-                    "power_code",
-                )
-                    .notNull(),
-
-            targetPlayerIds:
-                jsonb(
-                    "target_player_ids",
-                )
-                    .$type<string[]>()
-                    .notNull()
-                    .default(
-                        sql`
+    targetPlayerIds: jsonb("target_player_ids")
+      .$type<string[]>()
+      .notNull()
+      .default(
+        sql`
                             '[]'::jsonb
                         `,
-                    ),
+      ),
 
-            setupCompleted:
-                boolean(
-                    "setup_completed",
-                )
-                    .notNull()
-                    .default(
-                        true,
-                    ),
+    setupCompleted: boolean("setup_completed").notNull().default(true),
 
-            uses:
-                integer(
-                    "uses",
-                )
-                    .notNull()
-                    .default(
-                        0,
-                    ),
-        },
+    uses: integer("uses").notNull().default(0),
+  },
 
-        table => [
-            primaryKey({
-                name:
-                    "power_assignments_pk",
+  (table) => [
+    primaryKey({
+      name: "power_assignments_pk",
 
-                columns: [
-                    table.gameId,
-                    table.playerId,
-                ],
-            }),
+      columns: [table.gameId, table.playerId],
+    }),
 
-            check(
-                "power_assignments_uses_non_negative",
+    check(
+      "power_assignments_uses_non_negative",
 
-                sql`
+      sql`
                     ${table.uses} >= 0
                 `,
-            ),
-        ],
-    );
+    ),
+  ],
+);
+
+export const bridgeLinkCodesTable = pgTable(
+  "bridge_link_codes",
+
+  {
+    code: text("code").primaryKey(),
+
+    discordUserId: text("discord_user_id").notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+    }).notNull(),
+
+    consumedAt: timestamp("consumed_at", {
+      withTimezone: true,
+    }),
+  },
+);
+
+export const platformIdentityLinksTable = pgTable(
+  "platform_identity_links",
+
+  {
+    id: serial("id").primaryKey(),
+
+    discordUserId: text("discord_user_id").notNull(),
+
+    platform: bridgePlatformEnum("platform").notNull(),
+
+    platformPlayerId: text("platform_player_id").notNull(),
+
+    platformName: text("platform_name").notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+
+  (table) => [
+    unique("platform_identity_links_discord_platform_unique").on(
+      table.discordUserId,
+      table.platform,
+    ),
+
+    unique("platform_identity_links_platform_player_unique").on(
+      table.platform,
+      table.platformPlayerId,
+    ),
+  ],
+);
+
+export const bridgeCredentialsTable = pgTable(
+  "bridge_credentials",
+
+  {
+    id: text("id").primaryKey(),
+
+    identityLinkId: integer("identity_link_id")
+      .notNull()
+      .references(
+        () => platformIdentityLinksTable.id,
+
+        {
+          onDelete: "cascade",
+        },
+      ),
+
+    /*
+     * On ne stocke jamais le token
+     * original.
+     *
+     * Seulement son SHA-256.
+     */
+    tokenHash: text("token_hash").notNull().unique(),
+
+    bridgeVersion: text("bridge_version").notNull(),
+
+    gameVersion: text("game_version").notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    lastUsedAt: timestamp("last_used_at", {
+      withTimezone: true,
+    }),
+
+    revokedAt: timestamp("revoked_at", {
+      withTimezone: true,
+    }),
+  },
+);
+
+export const sts2BridgeSessionsTable = pgTable(
+  "sts2_bridge_sessions",
+
+  {
+    id: text("id").primaryKey(),
+
+    gameId: text("game_id")
+      .notNull()
+      .unique()
+      .references(
+        () => gamesTable.id,
+
+        {
+          onDelete: "cascade",
+        },
+      ),
+
+    /*
+     * Code humain :
+     *
+     * STT-K8Q4M2
+     *
+     * Ce code identifie notre partie
+     * STT, pas le lobby Steam.
+     */
+    sessionCode: text("session_code").notNull().unique(),
+
+    /*
+     * Le lobby Steam peut changer après
+     * un reload/rehost.
+     */
+    currentLobbyId: text("current_lobby_id").unique(),
+
+    hostPlatformPlayerId: text("host_platform_player_id"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export const sts2BridgeConnectionsTable = pgTable(
+  "sts2_bridge_connections",
+
+  {
+    bridgeSessionId: text("bridge_session_id")
+      .notNull()
+      .references(
+        () => sts2BridgeSessionsTable.id,
+
+        {
+          onDelete: "cascade",
+        },
+      ),
+
+    identityLinkId: integer("identity_link_id")
+      .notNull()
+      .references(
+        () => platformIdentityLinksTable.id,
+
+        {
+          onDelete: "cascade",
+        },
+      ),
+
+    clientInstanceId: text("client_instance_id").notNull(),
+
+    platformName: text("platform_name").notNull(),
+
+    bridgeVersion: text("bridge_version").notNull(),
+
+    gameVersion: text("game_version").notNull(),
+
+    lobbyId: text("lobby_id").notNull(),
+
+    isHost: boolean("is_host").notNull(),
+
+    hostPlatformPlayerId: text("host_platform_player_id").notNull(),
+
+    connectedAt: timestamp("connected_at", {
+      withTimezone: true,
+    }).notNull(),
+
+    lastSeenAt: timestamp("last_seen_at", {
+      withTimezone: true,
+    }).notNull(),
+
+    lastActIndex: integer("last_act_index"),
+
+    lastActId: text("last_act_id"),
+
+    lastSnapshot: jsonb("last_snapshot"),
+  },
+
+  (table) => [
+    primaryKey({
+      name: "sts2_bridge_connections_pk",
+
+      columns: [table.bridgeSessionId, table.identityLinkId],
+    }),
+  ],
+);

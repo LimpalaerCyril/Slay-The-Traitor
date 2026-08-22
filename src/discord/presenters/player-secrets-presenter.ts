@@ -1,6 +1,4 @@
-import type {
-  GamePlayer,
-} from "../../domain/games/game-player.js";
+import type { GamePlayer } from "../../domain/games/game-player.js";
 
 import type {
   PlayerObjectiveSecret,
@@ -9,8 +7,7 @@ import type {
 } from "../../application/game-service/game-service.js";
 
 function getStatusLabel(
-  status:
-    PlayerObjectiveSecret["assignment"]["status"],
+  status: PlayerObjectiveSecret["assignment"]["status"],
 ): string {
   switch (status) {
     case "PENDING":
@@ -27,13 +24,8 @@ function getStatusLabel(
   }
 }
 
-function createProgressText(
-  secret:
-    PlayerObjectiveSecret,
-): string {
-  if (
-    secret.objective.hiddenProgress
-  ) {
+function createProgressText(secret: PlayerObjectiveSecret): string {
+  if (secret.objective.hiddenProgress) {
     return "Progression : **masquée**";
   }
 
@@ -41,27 +33,15 @@ function createProgressText(
     "Progression :",
     `**${secret.assignment.progress.current}/${secret.assignment.progress.target}**`,
     `— ${getStatusLabel(secret.assignment.status)}`,
-  ].join(
-    " ",
-  );
+  ].join(" ");
 }
 
 function createObjectiveBlock(
-  title:
-    string,
-  secret:
-    PlayerObjectiveSecret
-    | undefined,
+  title: string,
+  secret: PlayerObjectiveSecret | undefined,
 ): string {
-  if (
-    secret === undefined
-  ) {
-    return [
-      `### ${title}`,
-      "Objectif indisponible.",
-    ].join(
-      "\n",
-    );
+  if (secret === undefined) {
+    return [`### ${title}`, "Objectif indisponible."].join("\n");
   }
 
   return [
@@ -69,44 +49,20 @@ function createObjectiveBlock(
     `**${secret.objective.name}**`,
     secret.objective.description,
     "",
-    createProgressText(
-      secret,
-    ),
-  ].join(
-    "\n",
-  );
+    createProgressText(secret),
+  ].join("\n");
 }
 
-function formatTargets(
-  targets:
-    readonly GamePlayer[],
-): string {
-  return targets
-    .map(
-      target =>
-        `<@${target.discordUserId}>`,
-    )
-    .join(
-      ", ",
-    );
+function formatTargets(targets: readonly GamePlayer[]): string {
+  return targets.map((target) => `<@${target.discordUserId}>`).join(", ");
 }
 
-function createRoleBlock(
-  secrets:
-    PlayerSecrets,
-): string {
+function createRoleBlock(secrets: PlayerSecrets): string {
   const variant =
-    secrets.roleAssignment
-      .variantCode
-      === undefined
+    secrets.roleAssignment.variantCode === undefined
       ? undefined
-      : secrets.role.variants
-        ?.find(
-          candidate =>
-            candidate.code
-            === secrets
-              .roleAssignment
-              .variantCode,
+      : secrets.role.variants?.find(
+          (candidate) => candidate.code === secrets.roleAssignment.variantCode,
         );
 
   /*
@@ -114,23 +70,13 @@ function createRoleBlock(
    * l'Ange, la variante devient le vrai
    * nom présenté au joueur.
    */
-  const displayName =
-    variant?.name
-    ?? secrets.role.name;
+  const displayName = variant?.name ?? secrets.role.name;
 
-  const displayDescription =
-    variant?.description
-    ?? secrets.role.description;
+  const displayDescription = variant?.description ?? secrets.role.description;
 
-  const lines = [
-    `## 🎭 Votre rôle : ${displayName}`,
-    "",
-    displayDescription,
-  ];
+  const lines = [`## 🎭 Votre rôle : ${displayName}`, "", displayDescription];
 
-  if (
-    secrets.roleTargets.length > 0
-  ) {
+  if (secrets.roleTargets.length > 0) {
     lines.push(
       "",
       secrets.roleTargets.length === 1
@@ -139,31 +85,17 @@ function createRoleBlock(
     );
   }
 
-  return lines.join(
-    "\n",
-  );
+  return lines.join("\n");
 }
 
-function createLoveBlock(
-  secrets:
-    PlayerSecrets,
-): string {
-  if (
-    secrets.lovePartners.length
-    === 0
-  ) {
-    return [
-      "### ❤️ Statut amoureux",
-      "**Non** — aucun lien amoureux.",
-    ].join(
+function createLoveBlock(secrets: PlayerSecrets): string {
+  if (secrets.lovePartners.length === 0) {
+    return ["### ❤️ Statut amoureux", "**Non** — aucun lien amoureux."].join(
       "\n",
     );
   }
 
-  const partners =
-    formatTargets(
-      secrets.lovePartners,
-    );
+  const partners = formatTargets(secrets.lovePartners);
 
   return [
     "### ❤️ Statut amoureux",
@@ -172,18 +104,11 @@ function createLoveBlock(
     secrets.lovePartners.length === 1
       ? `Vous êtes amoureux de ${partners}.`
       : `Vous êtes amoureux de ${partners}.`,
-  ].join(
-    "\n",
-  );
+  ].join("\n");
 }
 
-function getPowerModeLabel(
-  power:
-    PlayerPowerSecret,
-): string {
-  switch (
-    power.power.mode
-  ) {
+function getPowerModeLabel(power: PlayerPowerSecret): string {
+  switch (power.power.mode) {
     case "ACTIVE":
       return "Actif";
 
@@ -192,20 +117,9 @@ function getPowerModeLabel(
   }
 }
 
-function createPowerBlock(
-  power:
-    PlayerPowerSecret
-    | undefined,
-): string {
-  if (
-    power === undefined
-  ) {
-    return [
-      "### ✨ Pouvoir",
-      "Aucun pouvoir associé à votre rôle.",
-    ].join(
-      "\n",
-    );
+function createPowerBlock(power: PlayerPowerSecret | undefined): string {
+  if (power === undefined) {
+    return ["### ✨ Pouvoir", "Aucun pouvoir associé à votre rôle."].join("\n");
   }
 
   const lines = [
@@ -216,17 +130,13 @@ function createPowerBlock(
   ];
 
   if (
-    power.power.mode
-    === "ACTIVE"
-    && power.power.usageLimit?.maxUses
-    !== undefined
+    power.power.mode === "ACTIVE" &&
+    power.power.usageLimit?.maxUses !== undefined
   ) {
-    const remainingUses =
-      Math.max(
-        0,
-        power.power.usageLimit?.maxUses
-        - power.assignment.uses,
-      );
+    const remainingUses = Math.max(
+      0,
+      power.power.usageLimit?.maxUses - power.assignment.uses,
+    );
 
     lines.push(
       "",
@@ -234,9 +144,7 @@ function createPowerBlock(
     );
   }
 
-  if (
-    power.targets.length > 0
-  ) {
+  if (power.targets.length > 0) {
     lines.push(
       "",
       power.targets.length === 1
@@ -245,81 +153,46 @@ function createPowerBlock(
     );
   }
 
-  return lines.join(
-    "\n",
-  );
+  return lines.join("\n");
 }
 
 function createSecondaryTitle(
-  secret:
-    PlayerObjectiveSecret
-    | undefined,
+  secret: PlayerObjectiveSecret | undefined,
 ): string {
-  const actNumber =
-    secret?.assignment
-      .actNumber;
+  const actNumber = secret?.assignment.actNumber;
 
-  if (
-    actNumber === undefined
-  ) {
+  if (actNumber === undefined) {
     return "📜 Objectif secondaire";
   }
 
   return `📜 Objectif secondaire — Acte ${actNumber}`;
 }
 
-export function createPlayerSecretsContent(
-  secrets:
-    PlayerSecrets,
-): string {
-  const primary =
-    secrets.objectives.find(
-      entry =>
-        entry.assignment
-          .objectiveType
-        === "PRIMARY",
-    );
+export function createPlayerSecretsContent(secrets: PlayerSecrets): string {
+  const primary = secrets.objectives.find(
+    (entry) => entry.assignment.objectiveType === "PRIMARY",
+  );
 
-  const secondary =
-    secrets.objectives.find(
-      entry =>
-        entry.assignment
-          .objectiveType
-        === "SECONDARY",
-    );
+  const secondary = secrets.objectives.find(
+    (entry) => entry.assignment.objectiveType === "SECONDARY",
+  );
 
   return [
-    createRoleBlock(
-      secrets,
-    ),
+    createRoleBlock(secrets),
 
     "",
-    createLoveBlock(
-      secrets,
-    ),
+    createLoveBlock(secrets),
 
     "",
-    createPowerBlock(
-      secrets.power,
-    ),
+    createPowerBlock(secrets.power),
 
     "",
-    createObjectiveBlock(
-      "🎯 Objectif principal",
-      primary,
-    ),
+    createObjectiveBlock("🎯 Objectif principal", primary),
 
     "",
-    createObjectiveBlock(
-      createSecondaryTitle(
-        secondary,
-      ),
-      secondary,
-    ),
+    createObjectiveBlock(createSecondaryTitle(secondary), secondary),
 
     "",
     "🤫 Gardez ces informations secrètes.",
-  ].join(
-    "\n",
-  );
+  ].join("\n");
 }

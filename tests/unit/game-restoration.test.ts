@@ -1,44 +1,28 @@
-import {
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-  Game,
-} from "../../src/domain/games/game.js";
+import { Game } from "../../src/domain/games/game.js";
 
-function createActiveGame():
-  Game {
-  const game =
-    new Game();
+function createActiveGame(): Game {
+  const game = new Game();
 
   game.addPlayer({
-    id:
-      "alice",
+    id: "alice",
 
-    discordUserId:
-      "discord-alice",
+    discordUserId: "discord-alice",
 
-    characterSlug:
-      "character-a",
+    characterSlug: "character-a",
 
-    alive:
-      true,
+    alive: true,
   });
 
   game.addPlayer({
-    id:
-      "bob",
+    id: "bob",
 
-    discordUserId:
-      "discord-bob",
+    discordUserId: "discord-bob",
 
-    characterSlug:
-      "character-a",
+    characterSlug: "character-a",
 
-    alive:
-      true,
+    alive: true,
   });
 
   game.lockRoster();
@@ -46,97 +30,77 @@ function createActiveGame():
   game.setSecretAssignments(
     [
       {
-        playerId:
-          "alice",
+        playerId: "alice",
 
-        roleCode:
-          "role-a",
+        roleCode: "role-a",
       },
 
       {
-        playerId:
-          "bob",
+        playerId: "bob",
 
-        roleCode:
-          "role-b",
+        roleCode: "role-b",
       },
     ],
 
     [
       {
-        playerId:
-          "alice",
+        playerId: "alice",
 
-        objectiveCode:
-          "primary-a",
+        objectiveCode: "primary-a",
 
-        objectiveType:
-          "PRIMARY",
+        objectiveType: "PRIMARY",
 
         progress: {
           current: 0,
           target: 1,
         },
 
-        status:
-          "PENDING",
+        status: "PENDING",
       },
 
       {
-        playerId:
-          "alice",
+        playerId: "alice",
 
-        objectiveCode:
-          "secondary-a",
+        objectiveCode: "secondary-a",
 
-        objectiveType:
-          "SECONDARY",
+        objectiveType: "SECONDARY",
 
         progress: {
           current: 0,
           target: 2,
         },
 
-        status:
-          "PENDING",
+        status: "PENDING",
       },
 
       {
-        playerId:
-          "bob",
+        playerId: "bob",
 
-        objectiveCode:
-          "primary-b",
+        objectiveCode: "primary-b",
 
-        objectiveType:
-          "PRIMARY",
+        objectiveType: "PRIMARY",
 
         progress: {
           current: 1,
           target: 1,
         },
 
-        status:
-          "COMPLETED",
+        status: "COMPLETED",
       },
 
       {
-        playerId:
-          "bob",
+        playerId: "bob",
 
-        objectiveCode:
-          "secondary-b",
+        objectiveCode: "secondary-b",
 
-        objectiveType:
-          "SECONDARY",
+        objectiveType: "SECONDARY",
 
         progress: {
           current: 1,
           target: 2,
         },
 
-        status:
-          "IN_PROGRESS",
+        status: "IN_PROGRESS",
       },
     ],
   );
@@ -146,95 +110,59 @@ function createActiveGame():
   return game;
 }
 
-describe(
-  "Game restoration",
-  () => {
-    it("restores a complete active game", () => {
-      const original =
-        createActiveGame();
+describe("Game restoration", () => {
+  it("restores a complete active game", () => {
+    const original = createActiveGame();
 
-      const restored =
-        Game.restore(
-          original.exportData(),
-        );
+    const restored = Game.restore(original.exportData());
 
-      expect(
-        restored.exportData(),
-      ).toEqual(
-        original.exportData(),
-      );
-    });
+    expect(restored.exportData()).toEqual(original.exportData());
+  });
 
-    it("restores independent data copies", () => {
-      const original =
-        createActiveGame();
+  it("restores independent data copies", () => {
+    const original = createActiveGame();
 
-      const restored =
-        Game.restore(
-          original.exportData(),
-        );
+    const restored = Game.restore(original.exportData());
 
-      expect(
-        restored,
-      ).not.toBe(
-        original,
-      );
+    expect(restored).not.toBe(original);
 
-      expect(
-        restored.getPlayers(),
-      ).not.toBe(
-        original.getPlayers(),
-      );
-    });
+    expect(restored.getPlayers()).not.toBe(original.getPlayers());
+  });
 
-    it("rejects an active game without secret assignments", () => {
-      expect(() => {
-        Game.restore({
-          state:
-            "ACTIVE",
+  it("rejects an active game without secret assignments", () => {
+    expect(() => {
+      Game.restore({
+        state: "ACTIVE",
 
-          currentAct:
-            1,
+        currentAct: 1,
 
-          players: [
-            {
-              id:
-                "alice",
+        players: [
+          {
+            id: "alice",
 
-              discordUserId:
-                "discord-alice",
+            discordUserId: "discord-alice",
 
-              characterSlug:
-                "character-a",
+            characterSlug: "character-a",
 
-              alive:
-                true,
-            },
+            alive: true,
+          },
 
-            {
-              id:
-                "bob",
+          {
+            id: "bob",
 
-              discordUserId:
-                "discord-bob",
+            discordUserId: "discord-bob",
 
-              characterSlug:
-                "character-a",
+            characterSlug: "character-a",
 
-              alive:
-                true,
-            },
-          ],
+            alive: true,
+          },
+        ],
 
-          roleAssignments: [],
-          objectiveAssignments: [],
+        roleAssignments: [],
+        objectiveAssignments: [],
 
-          secretAssignmentsPrepared:
-            false,
-        });
-      }).toThrow(
-        "Restored game state requires secret assignments.",
-      );
-    });
-  },
-);
+        secretAssignmentsPrepared: false,
+      });
+    }).toThrow("Restored game state requires secret assignments.");
+  });
+});

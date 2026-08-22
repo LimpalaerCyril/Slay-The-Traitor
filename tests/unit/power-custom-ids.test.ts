@@ -1,65 +1,32 @@
-import {
-    describe,
-    expect,
-    it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-    CustomId,
-    parseCustomId,
+  CustomId,
+  parseCustomId,
 } from "../../src/discord/components/custom-ids.js";
 
-describe(
-    "power custom ids",
-    () => {
-        it(
-            "parses the power setup custom id",
-            () => {
-                expect(
-                    parseCustomId(
-                        CustomId
-                            .powerSetupOpen(
-                                "game-1",
-                            ),
-                    ),
-                ).toEqual({
-                    scope:
-                        "power",
+describe("power custom ids", () => {
+  it("parses the power setup custom id", () => {
+    expect(parseCustomId(CustomId.powerSetupOpen("game-1"))).toEqual({
+      scope: "power",
 
-                    action:
-                        "setup",
+      action: "setup",
 
-                    gameId:
-                        "game-1",
+      gameId: "game-1",
 
-                    extra: [],
-                });
-            },
-        );
+      extra: [],
+    });
+  });
 
-        it(
-            "parses the power target custom id",
-            () => {
-                expect(
-                    parseCustomId(
-                        CustomId
-                            .powerSetupTarget(
-                                "game-1",
-                            ),
-                    ),
-                ).toEqual({
-                    scope:
-                        "power",
+  it("parses the power target custom id", () => {
+    expect(parseCustomId(CustomId.powerSetupTarget("game-1"))).toEqual({
+      scope: "power",
 
-                    action:
-                        "target",
+      action: "target",
 
-                    gameId:
-                        "game-1",
+      gameId: "game-1",
 
-                    extra: [],
-                });
-            },
-        );
-    },
-);
+      extra: [],
+    });
+  });
+});

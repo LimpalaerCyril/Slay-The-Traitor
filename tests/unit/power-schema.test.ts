@@ -1,289 +1,181 @@
-import {
-    describe,
-    expect,
-    it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-    parsePowerDefinition,
-} from "../../src/infrastructure/content/schemas/power-schema.js";
+import { parsePowerDefinition } from "../../src/infrastructure/content/schemas/power-schema.js";
 
-describe(
-    "Power schema",
-    () => {
-        it(
-            "parses a game-limited restart power",
-            () => {
-                const power =
-                    parsePowerDefinition({
-                        code:
-                            "time-rewind",
+describe("Power schema", () => {
+  it("parses a game-limited restart power", () => {
+    const power = parsePowerDefinition({
+      code: "time-rewind",
 
-                        name:
-                            "Remonter le temps",
+      name: "Remonter le temps",
 
-                        description:
-                            "Restart combat.",
+      description: "Restart combat.",
 
-                        mode:
-                            "ACTIVE",
+      mode: "ACTIVE",
 
-                        supportedTrackingModes: [
-                            "STS2",
-                        ],
+      supportedTrackingModes: ["STS2"],
 
-                        usageLimit: {
-                            scope:
-                                "GAME",
+      usageLimit: {
+        scope: "GAME",
 
-                            maxUses:
-                                1,
-                        },
+        maxUses: 1,
+      },
 
-                        activation: {
-                            timing:
-                                "COMBAT_ACTIVE",
-                        },
+      activation: {
+        timing: "COMBAT_ACTIVE",
+      },
 
-                        effect: {
-                            type:
-                                "RESTART_COMBAT",
-                        },
-                    });
+      effect: {
+        type: "RESTART_COMBAT",
+      },
+    });
 
-                expect(
-                    power.usageLimit,
-                ).toEqual({
-                    scope:
-                        "GAME",
+    expect(power.usageLimit).toEqual({
+      scope: "GAME",
 
-                    maxUses:
-                        1,
-                });
+      maxUses: 1,
+    });
 
-                expect(
-                    power.effect,
-                ).toEqual({
-                    type:
-                        "RESTART_COMBAT",
-                });
-            },
-        );
+    expect(power.effect).toEqual({
+      type: "RESTART_COMBAT",
+    });
+  });
 
-        it(
-            "parses an act-limited targeted campfire power",
-            () => {
-                const power =
-                    parsePowerDefinition({
-                        code:
-                            "sleep-denial",
+  it("parses an act-limited targeted campfire power", () => {
+    const power = parsePowerDefinition({
+      code: "sleep-denial",
 
-                        name:
-                            "Insomnie",
+      name: "Insomnie",
 
-                        description:
-                            "Blocks rest.",
+      description: "Blocks rest.",
 
-                        mode:
-                            "ACTIVE",
+      mode: "ACTIVE",
 
-                        supportedTrackingModes: [
-                            "STS2",
-                        ],
+      supportedTrackingModes: ["STS2"],
 
-                        usageLimit: {
-                            scope:
-                                "ACT",
+      usageLimit: {
+        scope: "ACT",
 
-                            maxUses:
-                                1,
-                        },
+        maxUses: 1,
+      },
 
-                        activation: {
-                            timing:
-                                "CAMPFIRE",
+      activation: {
+        timing: "CAMPFIRE",
 
-                            targetSelection: {
-                                count:
-                                    1,
+        targetSelection: {
+          count: 1,
 
-                                allowSelf:
-                                    false,
-                            },
-                        },
+          allowSelf: false,
+        },
+      },
 
-                        effect: {
-                            type:
-                                "BLOCK_CAMPFIRE_OPTION",
+      effect: {
+        type: "BLOCK_CAMPFIRE_OPTION",
 
-                            option:
-                                "REST",
+        option: "REST",
 
-                            target:
-                                "SELECTED_PLAYER",
-                        },
-                    });
+        target: "SELECTED_PLAYER",
+      },
+    });
 
-                expect(
-                    power.activation
-                        ?.targetSelection,
-                ).toEqual({
-                    count:
-                        1,
+    expect(power.activation?.targetSelection).toEqual({
+      count: 1,
 
-                    allowSelf:
-                        false,
-                });
-            },
-        );
+      allowSelf: false,
+    });
+  });
 
-        it(
-            "parses Tesla energy gain",
-            () => {
-                const power =
-                    parsePowerDefinition({
-                        code:
-                            "overcharge",
+  it("parses Tesla energy gain", () => {
+    const power = parsePowerDefinition({
+      code: "overcharge",
 
-                        name:
-                            "Surcharge",
+      name: "Surcharge",
 
-                        description:
-                            "Gain energy.",
+      description: "Gain energy.",
 
-                        mode:
-                            "ACTIVE",
+      mode: "ACTIVE",
 
-                        supportedTrackingModes: [
-                            "STS2",
-                        ],
+      supportedTrackingModes: ["STS2"],
 
-                        usageLimit: {
-                            scope:
-                                "ACT",
+      usageLimit: {
+        scope: "ACT",
 
-                            maxUses:
-                                3,
-                        },
+        maxUses: 3,
+      },
 
-                        activation: {
-                            timing:
-                                "COMBAT_START",
-                        },
+      activation: {
+        timing: "COMBAT_START",
+      },
 
-                        effect: {
-                            type:
-                                "GRANT_ENERGY",
+      effect: {
+        type: "GRANT_ENERGY",
 
-                            amount:
-                                1,
+        amount: 1,
 
-                            target:
-                                "OWNER",
+        target: "OWNER",
 
-                            duration:
-                                "FIRST_TURN",
-                        },
-                    });
+        duration: "FIRST_TURN",
+      },
+    });
 
-                expect(
-                    power.effect,
-                ).toEqual({
-                    type:
-                        "GRANT_ENERGY",
+    expect(power.effect).toEqual({
+      type: "GRANT_ENERGY",
 
-                    amount:
-                        1,
+      amount: 1,
 
-                    target:
-                        "OWNER",
+      target: "OWNER",
 
-                    duration:
-                        "FIRST_TURN",
-                });
-            },
-        );
+      duration: "FIRST_TURN",
+    });
+  });
 
-        it(
-            "rejects an active power without an effect",
-            () => {
-                expect(
-                    () =>
-                        parsePowerDefinition({
-                            code:
-                                "broken",
+  it("rejects an active power without an effect", () => {
+    expect(() =>
+      parsePowerDefinition({
+        code: "broken",
 
-                            name:
-                                "Broken",
+        name: "Broken",
 
-                            description:
-                                "Broken.",
+        description: "Broken.",
 
-                            mode:
-                                "ACTIVE",
+        mode: "ACTIVE",
 
-                            supportedTrackingModes: [
-                                "STS2",
-                            ],
+        supportedTrackingModes: ["STS2"],
 
-                            usageLimit: {
-                                scope:
-                                    "GAME",
+        usageLimit: {
+          scope: "GAME",
 
-                                maxUses:
-                                    1,
-                            },
+          maxUses: 1,
+        },
 
-                            activation: {
-                                timing:
-                                    "ANYTIME",
-                            },
-                        }),
-                ).toThrow();
-            },
-        );
+        activation: {
+          timing: "ANYTIME",
+        },
+      }),
+    ).toThrow();
+  });
 
-        it(
-            "keeps passive setup powers valid",
-            () => {
-                const power =
-                    parsePowerDefinition({
-                        code:
-                            "lovers-bond",
+  it("keeps passive setup powers valid", () => {
+    const power = parsePowerDefinition({
+      code: "lovers-bond",
 
-                        name:
-                            "Lien amoureux",
+      name: "Lien amoureux",
 
-                        description:
-                            "Link players.",
+      description: "Link players.",
 
-                        mode:
-                            "PASSIVE",
+      mode: "PASSIVE",
 
-                        supportedTrackingModes: [
-                            "MANUAL",
-                            "STS2",
-                        ],
+      supportedTrackingModes: ["MANUAL", "STS2"],
 
-                        setup: {
-                            targetSelection: {
-                                count:
-                                    2,
+      setup: {
+        targetSelection: {
+          count: 2,
 
-                                allowSelf:
-                                    true,
-                            },
-                        },
-                    });
+          allowSelf: true,
+        },
+      },
+    });
 
-                expect(
-                    power.setup
-                        ?.targetSelection
-                        .count,
-                ).toBe(
-                    2,
-                );
-            },
-        );
-    },
-);
+    expect(power.setup?.targetSelection.count).toBe(2);
+  });
+});

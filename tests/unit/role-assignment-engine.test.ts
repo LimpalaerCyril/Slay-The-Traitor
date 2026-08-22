@@ -1,605 +1,433 @@
 import { describe, expect, it } from "vitest";
 
-import {
-    assignRoles,
-} from "../../src/application/role-assignment/role-assignment-engine.js";
+import { assignRoles } from "../../src/application/role-assignment/role-assignment-engine.js";
 
-import type {
-    GamePlayer,
-} from "../../src/domain/games/game-player.js";
+import type { GamePlayer } from "../../src/domain/games/game-player.js";
 
-import type {
-    Role,
-} from "../../src/domain/roles/role.js";
+import type { Role } from "../../src/domain/roles/role.js";
 
-function createPlayer(
-    id: string,
-): GamePlayer {
-    return {
-        id,
-        discordUserId: `discord-${id}`,
-        characterSlug: "test-character",
-        alive: true,
-    };
+function createPlayer(id: string): GamePlayer {
+  return {
+    id,
+    discordUserId: `discord-${id}`,
+    characterSlug: "test-character",
+    alive: true,
+  };
 }
 
 function createRole(
-    code: string,
-    minimumPlayers = 2,
-    maximumPlayers = 4,
+  code: string,
+  minimumPlayers = 2,
+  maximumPlayers = 4,
 ): Role {
-    return {
-        code,
-        name: code,
-        description: `Role ${code}`,
+  return {
+    code,
+    name: code,
+    description: `Role ${code}`,
 
-        alignment: "LOYAL",
-        tags: [],
+    alignment: "LOYAL",
+    tags: [],
 
-        minimumPlayers,
-        maximumPlayers,
+    minimumPlayers,
+    maximumPlayers,
 
-        primaryObjectiveCode:
-            "test-primary",
+    primaryObjectiveCode: "test-primary",
 
-        supportedTrackingModes: [
-            "MANUAL",
-            "STS2",
-        ],
-    };
+    supportedTrackingModes: ["MANUAL", "STS2"],
+  };
 }
 
 function createFourPlayers(): GamePlayer[] {
-    return [
-        createPlayer("alice"),
-        createPlayer("bob"),
-        createPlayer("charlie"),
-        createPlayer("diana"),
-    ];
+  return [
+    createPlayer("alice"),
+    createPlayer("bob"),
+    createPlayer("charlie"),
+    createPlayer("diana"),
+  ];
 }
 
 function createFourRoles(): Role[] {
-    return [
-        createRole("guardian"),
-        createRole("miser"),
-        createRole("oracle"),
-        createRole("traitor"),
-    ];
+  return [
+    createRole("guardian"),
+    createRole("miser"),
+    createRole("oracle"),
+    createRole("traitor"),
+  ];
 }
 
 describe("RoleAssignmentEngine", () => {
-    it("produces the same assignments with the same seed", () => {
-        const players = createFourPlayers();
-        const roles = createFourRoles();
+  it("produces the same assignments with the same seed", () => {
+    const players = createFourPlayers();
+    const roles = createFourRoles();
 
-        const first = assignRoles({
-            seed: "spire-seed",
-            players,
-            roles,
-            trackingMode: "MANUAL",
-        });
-
-        const second = assignRoles({
-            seed: "spire-seed",
-            players,
-            roles,
-            trackingMode: "MANUAL",
-        });
-
-        expect(first).toEqual(second);
+    const first = assignRoles({
+      seed: "spire-seed",
+      players,
+      roles,
+      trackingMode: "MANUAL",
     });
 
-    it("can produce different assignments with another seed", () => {
-        const players = createFourPlayers();
-        const roles = createFourRoles();
-
-        const first = assignRoles({
-            seed: "spire-seed",
-            players,
-            roles,
-            trackingMode: "MANUAL",
-        });
-
-        const second = assignRoles({
-            seed: "spire-seed-2",
-            players,
-            roles,
-            trackingMode: "MANUAL",
-        });
-
-        expect(first).not.toEqual(second);
+    const second = assignRoles({
+      seed: "spire-seed",
+      players,
+      roles,
+      trackingMode: "MANUAL",
     });
 
-    it("assigns exactly one different role to every player", () => {
-        const assignments = assignRoles({
-            seed: "spire-seed",
-            players: createFourPlayers(),
-            roles: createFourRoles(),
-            trackingMode: "MANUAL",
-        });
+    expect(first).toEqual(second);
+  });
 
-        expect(assignments).toHaveLength(4);
+  it("can produce different assignments with another seed", () => {
+    const players = createFourPlayers();
+    const roles = createFourRoles();
 
-        const roleCodes = assignments.map(
-            assignment => assignment.roleCode,
-        );
-
-        expect(
-            new Set(roleCodes).size,
-        ).toBe(4);
+    const first = assignRoles({
+      seed: "spire-seed",
+      players,
+      roles,
+      trackingMode: "MANUAL",
     });
 
-    it("ignores roles unavailable for the player count", () => {
-        const players = [
-            createPlayer("alice"),
-            createPlayer("bob"),
-        ];
-
-        const roles = [
-            createRole("guardian"),
-            createRole("miser"),
-
-            createRole(
-                "traitor",
-                3,
-                4,
-            ),
-        ];
-
-        const assignments = assignRoles({
-            seed: "two-player-game",
-            players,
-            roles,
-            trackingMode: "MANUAL",
-        });
-
-        const roleCodes = assignments.map(
-            assignment => assignment.roleCode,
-        );
-
-        expect(
-            roleCodes,
-        ).not.toContain("traitor");
-
-        expect(assignments).toHaveLength(2);
+    const second = assignRoles({
+      seed: "spire-seed-2",
+      players,
+      roles,
+      trackingMode: "MANUAL",
     });
 
-    it("fails when there are not enough eligible roles", () => {
-        const players = createFourPlayers();
+    expect(first).not.toEqual(second);
+  });
 
-        const roles = [
-            createRole("guardian"),
-            createRole("oracle"),
-        ];
-
-        expect(() => {
-            assignRoles({
-                players,
-                roles,
-                seed: "test-seed",
-                trackingMode: "MANUAL",
-            });
-        }).toThrow(
-            "Not enough roles are available for 4 players.",
-        );
+  it("assigns exactly one different role to every player", () => {
+    const assignments = assignRoles({
+      seed: "spire-seed",
+      players: createFourPlayers(),
+      roles: createFourRoles(),
+      trackingMode: "MANUAL",
     });
 
-    it("does not depend on player or role input order", () => {
-        const normal = assignRoles({
-            seed: "spire-seed",
+    expect(assignments).toHaveLength(4);
 
-            players: createFourPlayers(),
+    const roleCodes = assignments.map((assignment) => assignment.roleCode);
 
-            roles: createFourRoles(),
+    expect(new Set(roleCodes).size).toBe(4);
+  });
 
-            trackingMode: "MANUAL",
-        });
+  it("ignores roles unavailable for the player count", () => {
+    const players = [createPlayer("alice"), createPlayer("bob")];
 
-        const reversed = assignRoles({
-            seed: "spire-seed",
+    const roles = [
+      createRole("guardian"),
+      createRole("miser"),
 
-            players: [
-                ...createFourPlayers(),
-            ].reverse(),
+      createRole("traitor", 3, 4),
+    ];
 
-            roles: [
-                ...createFourRoles(),
-            ].reverse(),
-
-            trackingMode: "MANUAL",
-        });
-
-        expect(reversed).toEqual(normal);
+    const assignments = assignRoles({
+      seed: "two-player-game",
+      players,
+      roles,
+      trackingMode: "MANUAL",
     });
 
-    it("rejects duplicate role codes", () => {
-        const players = [
-            createPlayer("alice"),
-            createPlayer("bob"),
-        ];
+    const roleCodes = assignments.map((assignment) => assignment.roleCode);
 
-        const roles = [
-            createRole("guardian"),
-            createRole("guardian"),
-        ];
+    expect(roleCodes).not.toContain("traitor");
 
-        expect(() => {
-            assignRoles({
-                seed: "spire-seed",
-                players,
-                roles,
-                trackingMode: "MANUAL",
-            });
-        }).toThrow(
-            "Duplicate role code: guardian",
-        );
+    expect(assignments).toHaveLength(2);
+  });
+
+  it("fails when there are not enough eligible roles", () => {
+    const players = createFourPlayers();
+
+    const roles = [createRole("guardian"), createRole("oracle")];
+
+    expect(() => {
+      assignRoles({
+        players,
+        roles,
+        seed: "test-seed",
+        trackingMode: "MANUAL",
+      });
+    }).toThrow("Not enough roles are available for 4 players.");
+  });
+
+  it("does not depend on player or role input order", () => {
+    const normal = assignRoles({
+      seed: "spire-seed",
+
+      players: createFourPlayers(),
+
+      roles: createFourRoles(),
+
+      trackingMode: "MANUAL",
     });
 
-    it(
-        "produces the same assignments regardless of player input order",
-        () => {
-            const players = [
-                {
-                    id:
-                        "alice",
+    const reversed = assignRoles({
+      seed: "spire-seed",
 
-                    discordUserId:
-                        "discord-alice",
+      players: [...createFourPlayers()].reverse(),
 
-                    characterSlug:
-                        "character-a",
+      roles: [...createFourRoles()].reverse(),
 
-                    alive:
-                        true,
-                },
+      trackingMode: "MANUAL",
+    });
 
-                {
-                    id:
-                        "bob",
+    expect(reversed).toEqual(normal);
+  });
 
-                    discordUserId:
-                        "discord-bob",
+  it("rejects duplicate role codes", () => {
+    const players = [createPlayer("alice"), createPlayer("bob")];
 
-                    characterSlug:
-                        "character-b",
+    const roles = [createRole("guardian"), createRole("guardian")];
 
-                    alive:
-                        true,
-                },
+    expect(() => {
+      assignRoles({
+        seed: "spire-seed",
+        players,
+        roles,
+        trackingMode: "MANUAL",
+      });
+    }).toThrow("Duplicate role code: guardian");
+  });
 
-                {
-                    id:
-                        "charlie",
+  it("produces the same assignments regardless of player input order", () => {
+    const players = [
+      {
+        id: "alice",
 
-                    discordUserId:
-                        "discord-charlie",
+        discordUserId: "discord-alice",
 
-                    characterSlug:
-                        "character-c",
+        characterSlug: "character-a",
 
-                    alive:
-                        true,
-                },
-            ];
+        alive: true,
+      },
 
-            const roles: readonly Role[] = [
-                {
-                    code:
-                        "guardian",
+      {
+        id: "bob",
 
-                    name:
-                        "Guardian",
+        discordUserId: "discord-bob",
 
-                    description:
-                        "Guardian",
+        characterSlug: "character-b",
 
-                    alignment:
-                        "LOYAL",
+        alive: true,
+      },
 
-                    tags: [],
+      {
+        id: "charlie",
 
-                    minimumPlayers:
-                        2,
+        discordUserId: "discord-charlie",
 
-                    maximumPlayers:
-                        4,
+        characterSlug: "character-c",
 
-                    primaryObjectiveCode:
-                        "test-primary",
+        alive: true,
+      },
+    ];
 
-                    supportedTrackingModes: [
-                        "MANUAL",
-                        "STS2",
-                    ],
-                },
+    const roles: readonly Role[] = [
+      {
+        code: "guardian",
 
-                {
-                    code:
-                        "miser",
+        name: "Guardian",
 
-                    name:
-                        "Miser",
+        description: "Guardian",
 
-                    description:
-                        "Miser",
+        alignment: "LOYAL",
 
-                    alignment:
-                        "SELFISH",
+        tags: [],
 
-                    tags: [],
+        minimumPlayers: 2,
 
-                    minimumPlayers:
-                        2,
+        maximumPlayers: 4,
 
-                    maximumPlayers:
-                        4,
+        primaryObjectiveCode: "test-primary",
 
-                    primaryObjectiveCode:
-                        "test-primary",
+        supportedTrackingModes: ["MANUAL", "STS2"],
+      },
 
-                    supportedTrackingModes: [
-                        "MANUAL",
-                        "STS2",
-                    ],
-                },
+      {
+        code: "miser",
 
-                {
-                    code:
-                        "oracle",
-
-                    name:
-                        "Oracle",
-
-                    description:
-                        "Oracle",
-
-                    alignment:
-                        "CHAOTIC",
-
-                    tags: [],
-
-                    minimumPlayers:
-                        2,
-
-                    maximumPlayers:
-                        4,
-
-                    primaryObjectiveCode:
-                        "test-primary",
-
-                    supportedTrackingModes: [
-                        "MANUAL",
-                        "STS2",
-                    ],
-                },
-
-                {
-                    code:
-                        "traitor",
-
-                    name:
-                        "Traitor",
+        name: "Miser",
 
-                    description:
-                        "Traitor",
+        description: "Miser",
 
-                    alignment:
-                        "DISRUPTIVE",
+        alignment: "SELFISH",
 
-                    tags: [],
+        tags: [],
 
-                    minimumPlayers:
-                        3,
+        minimumPlayers: 2,
 
-                    maximumPlayers:
-                        4,
+        maximumPlayers: 4,
 
-                    primaryObjectiveCode:
-                        "test-primary",
+        primaryObjectiveCode: "test-primary",
 
-                    supportedTrackingModes: [
-                        "MANUAL",
-                        "STS2",
-                    ],
-                },
-            ];
+        supportedTrackingModes: ["MANUAL", "STS2"],
+      },
 
-            const first =
-                assignRoles({
-                    seed:
-                        "order-independent-seed",
+      {
+        code: "oracle",
 
-                    players: [
-                        players[0]!,
-                        players[1]!,
-                        players[2]!,
-                    ],
+        name: "Oracle",
 
-                    roles,
-                    trackingMode: "MANUAL",
-                });
+        description: "Oracle",
 
-            const second =
-                assignRoles({
-                    seed:
-                        "order-independent-seed",
+        alignment: "CHAOTIC",
 
-                    players: [
-                        players[2]!,
-                        players[0]!,
-                        players[1]!,
-                    ],
+        tags: [],
 
-                    roles,
-                    trackingMode: "MANUAL",
-                });
+        minimumPlayers: 2,
 
-            expect(
-                second,
-            ).toEqual(
-                first,
-            );
-        },
-    );
+        maximumPlayers: 4,
 
-    it(
-        "produces the same assignments regardless of role input order",
-        () => {
-            const players = [
-                {
-                    id:
-                        "alice",
+        primaryObjectiveCode: "test-primary",
 
-                    discordUserId:
-                        "discord-alice",
+        supportedTrackingModes: ["MANUAL", "STS2"],
+      },
 
-                    characterSlug:
-                        "character-a",
+      {
+        code: "traitor",
 
-                    alive:
-                        true,
-                },
+        name: "Traitor",
 
-                {
-                    id:
-                        "bob",
+        description: "Traitor",
 
-                    discordUserId:
-                        "discord-bob",
+        alignment: "DISRUPTIVE",
 
-                    characterSlug:
-                        "character-b",
+        tags: [],
 
-                    alive:
-                        true,
-                },
-            ];
+        minimumPlayers: 3,
 
-            const guardian: Role = {
-                code:
-                    "guardian",
+        maximumPlayers: 4,
 
-                name:
-                    "Guardian",
+        primaryObjectiveCode: "test-primary",
 
-                description:
-                    "Guardian",
+        supportedTrackingModes: ["MANUAL", "STS2"],
+      },
+    ];
 
-                alignment:
-                    "LOYAL",
+    const first = assignRoles({
+      seed: "order-independent-seed",
 
-                tags: [],
+      players: [players[0]!, players[1]!, players[2]!],
 
-                minimumPlayers:
-                    2,
+      roles,
+      trackingMode: "MANUAL",
+    });
 
-                maximumPlayers:
-                    4,
+    const second = assignRoles({
+      seed: "order-independent-seed",
 
-                primaryObjectiveCode:
-                    "test-primary",
+      players: [players[2]!, players[0]!, players[1]!],
 
-                supportedTrackingModes: [
-                    "MANUAL",
-                    "STS2",
-                ],
-            };
+      roles,
+      trackingMode: "MANUAL",
+    });
 
-            const miser: Role = {
-                code:
-                    "miser",
+    expect(second).toEqual(first);
+  });
 
-                name:
-                    "Miser",
+  it("produces the same assignments regardless of role input order", () => {
+    const players = [
+      {
+        id: "alice",
 
-                description:
-                    "Miser",
+        discordUserId: "discord-alice",
 
-                alignment:
-                    "SELFISH",
+        characterSlug: "character-a",
 
-                tags: [],
+        alive: true,
+      },
 
-                minimumPlayers:
-                    2,
+      {
+        id: "bob",
 
-                maximumPlayers:
-                    4,
+        discordUserId: "discord-bob",
 
-                primaryObjectiveCode:
-                    "test-primary",
+        characterSlug: "character-b",
 
-                supportedTrackingModes: [
-                    "MANUAL",
-                    "STS2",
-                ],
-            };
+        alive: true,
+      },
+    ];
 
-            const oracle: Role = {
-                code:
-                    "oracle",
+    const guardian: Role = {
+      code: "guardian",
 
-                name:
-                    "Oracle",
+      name: "Guardian",
 
-                description:
-                    "Oracle",
+      description: "Guardian",
 
-                alignment:
-                    "CHAOTIC",
+      alignment: "LOYAL",
 
-                tags: [],
+      tags: [],
 
-                minimumPlayers:
-                    2,
+      minimumPlayers: 2,
 
-                maximumPlayers:
-                    4,
+      maximumPlayers: 4,
 
-                primaryObjectiveCode:
-                    "oracle-primary",
+      primaryObjectiveCode: "test-primary",
 
-                supportedTrackingModes: [
-                    "MANUAL",
-                    "STS2",
-                ],
-            };
+      supportedTrackingModes: ["MANUAL", "STS2"],
+    };
 
-            const first =
-                assignRoles({
-                    seed:
-                        "role-order-seed",
+    const miser: Role = {
+      code: "miser",
 
-                    players,
+      name: "Miser",
 
-                    roles: [
-                        guardian,
-                        miser,
-                        oracle,
-                    ],
-                    trackingMode: "MANUAL",
-                });
+      description: "Miser",
 
-            const second =
-                assignRoles({
-                    seed:
-                        "role-order-seed",
+      alignment: "SELFISH",
 
-                    players,
+      tags: [],
 
-                    roles: [
-                        oracle,
-                        guardian,
-                        miser,
-                    ],
-                    trackingMode: "MANUAL",
-                });
+      minimumPlayers: 2,
 
-            expect(
-                second,
-            ).toEqual(
-                first,
-            );
-        },
-    );
+      maximumPlayers: 4,
+
+      primaryObjectiveCode: "test-primary",
+
+      supportedTrackingModes: ["MANUAL", "STS2"],
+    };
+
+    const oracle: Role = {
+      code: "oracle",
+
+      name: "Oracle",
+
+      description: "Oracle",
+
+      alignment: "CHAOTIC",
+
+      tags: [],
+
+      minimumPlayers: 2,
+
+      maximumPlayers: 4,
+
+      primaryObjectiveCode: "oracle-primary",
+
+      supportedTrackingModes: ["MANUAL", "STS2"],
+    };
+
+    const first = assignRoles({
+      seed: "role-order-seed",
+
+      players,
+
+      roles: [guardian, miser, oracle],
+      trackingMode: "MANUAL",
+    });
+
+    const second = assignRoles({
+      seed: "role-order-seed",
+
+      players,
+
+      roles: [oracle, guardian, miser],
+      trackingMode: "MANUAL",
+    });
+
+    expect(second).toEqual(first);
+  });
 });

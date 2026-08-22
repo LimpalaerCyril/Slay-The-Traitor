@@ -1,277 +1,168 @@
-import {
-    describe,
-    expect,
-    it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import type {
-    GameEvent,
-} from "../../src/domain/events/game-events.js";
+import type { GameEvent } from "../../src/domain/events/game-events.js";
 
-import type {
-    GamePlayer,
-} from "../../src/domain/games/game-player.js";
+import type { GamePlayer } from "../../src/domain/games/game-player.js";
 
-import {
-    createObjectiveAssignment,
-} from "../../src/domain/objectives/objective-assignments.js";
+import { createObjectiveAssignment } from "../../src/domain/objectives/objective-assignments.js";
 
-import {
-    evaluateObjective,
-} from "../../src/domain/objectives/objective-engine.js";
+import { evaluateObjective } from "../../src/domain/objectives/objective-engine.js";
 
-import type {
-    Objective,
-} from "../../src/domain/objectives/objective.js";
+import type { Objective } from "../../src/domain/objectives/objective.js";
 
-const objective:
-    Objective = {
-    code:
-        "lovers-survive-act-two",
+const objective: Objective = {
+  code: "lovers-survive-act-two",
 
-    name:
-        "Jusqu'à ce que la mort nous sépare",
+  name: "Jusqu'à ce que la mort nous sépare",
 
-    description:
-        "Les deux amoureux doivent être encore vivants à la fin de l'acte 2.",
+  description:
+    "Les deux amoureux doivent être encore vivants à la fin de l'acte 2.",
 
-    category:
-        "SURVIVAL",
+  category: "SURVIVAL",
 
-    difficulty:
-        "HARD",
+  difficulty: "HARD",
 
-    minimumPlayers:
-        2,
+  minimumPlayers: 2,
 
-    maximumPlayers:
-        4,
+  maximumPlayers: 4,
 
-    allowedTypes: [
-        "PRIMARY",
+  allowedTypes: ["PRIMARY"],
+
+  requiredEvents: ["PLAYER_DIED", "ACT_COMPLETED"],
+
+  verificationMode: "GROUP_CONFIRMED",
+
+  compatibilityTags: [],
+
+  score: 100,
+
+  hiddenProgress: true,
+
+  rule: {
+    type: "CONDITION",
+
+    operator: "ALL",
+
+    conditions: [
+      {
+        type: "PLAYER_ALIVE",
+
+        player: "POWER_TARGET",
+
+        expected: true,
+      },
     ],
 
-    requiredEvents: [
-        "PLAYER_DIED",
-        "ACT_COMPLETED",
-    ],
+    completeAt: "RESOLUTION",
 
-    verificationMode:
-        "GROUP_CONFIRMED",
+    resolveAt: "ACT_END",
 
-    compatibilityTags: [],
+    resolveActNumber: 2,
+  },
 
-    score:
-        100,
-
-    hiddenProgress:
-        true,
-
-    rule: {
-        type:
-            "CONDITION",
-
-        operator:
-            "ALL",
-
-        conditions: [
-            {
-                type:
-                    "PLAYER_ALIVE",
-
-                player:
-                    "POWER_TARGET",
-
-                expected:
-                    true,
-            },
-        ],
-
-        completeAt:
-            "RESOLUTION",
-
-        resolveAt:
-            "ACT_END",
-
-        resolveActNumber:
-            2,
-    },
-
-    supportedTrackingModes: [
-        "MANUAL",
-        "STS2",
-    ],
+  supportedTrackingModes: ["MANUAL", "STS2"],
 };
 
-const players:
-    readonly GamePlayer[] = [
-        {
-            id:
-                "cupid",
+const players: readonly GamePlayer[] = [
+  {
+    id: "cupid",
 
-            discordUserId:
-                "discord-cupid",
+    discordUserId: "discord-cupid",
 
-            characterSlug:
-                "silent",
+    characterSlug: "silent",
 
-            alive:
-                true,
-        },
+    alive: true,
+  },
 
-        {
-            id:
-                "alice",
+  {
+    id: "alice",
 
-            discordUserId:
-                "discord-alice",
+    discordUserId: "discord-alice",
 
-            characterSlug:
-                "ironclad",
+    characterSlug: "ironclad",
 
-            alive:
-                true,
-        },
+    alive: true,
+  },
 
-        {
-            id:
-                "bob",
+  {
+    id: "bob",
 
-            discordUserId:
-                "discord-bob",
+    discordUserId: "discord-bob",
 
-            characterSlug:
-                "defect",
+    characterSlug: "defect",
 
-            alive:
-                true,
-        },
-    ];
+    alive: true,
+  },
+];
 
-function createActTwoCompletedEvent():
-    GameEvent {
-    return {
-        id:
-            "act-two-completed",
+function createActTwoCompletedEvent(): GameEvent {
+  return {
+    id: "act-two-completed",
 
-        gameId:
-            "game-1",
+    gameId: "game-1",
 
-        type:
-            "ACT_COMPLETED",
+    type: "ACT_COMPLETED",
 
-        actNumber:
-            2,
+    actNumber: 2,
 
-        payload: {},
+    payload: {},
 
-        source:
-            "SYSTEM",
+    source: "SYSTEM",
 
-        validationStatus:
-            "VERIFIED",
+    validationStatus: "VERIFIED",
 
-        createdAt:
-            new Date(
-                "2026-01-01T12:00:00Z",
-            ),
-    };
+    createdAt: new Date("2026-01-01T12:00:00Z"),
+  };
 }
 
-describe(
-    "Cupid objective condition",
-    () => {
-        it(
-            "completes when both lovers are alive at the end of act 2",
-            () => {
-                const assignment =
-                    createObjectiveAssignment(
-                        "cupid",
-                        objective,
-                        "PRIMARY",
-                    );
+describe("Cupid objective condition", () => {
+  it("completes when both lovers are alive at the end of act 2", () => {
+    const assignment = createObjectiveAssignment("cupid", objective, "PRIMARY");
 
-                const evaluation =
-                    evaluateObjective({
-                        objective,
+    const evaluation = evaluateObjective({
+      objective,
 
-                        assignment,
+      assignment,
 
-                        events: [
-                            createActTwoCompletedEvent(),
-                        ],
+      events: [createActTwoCompletedEvent()],
 
-                        players,
+      players,
 
-                        powerTargetPlayerIds: [
-                            "alice",
-                            "bob",
-                        ],
+      powerTargetPlayerIds: ["alice", "bob"],
 
-                        gameFinished:
-                            false,
-                    });
+      gameFinished: false,
+    });
 
-                expect(
-                    evaluation.status,
-                ).toBe(
-                    "COMPLETED",
-                );
-            },
-        );
+    expect(evaluation.status).toBe("COMPLETED");
+  });
 
-        it(
-            "fails when one lover is dead at the end of act 2",
-            () => {
-                const assignment =
-                    createObjectiveAssignment(
-                        "cupid",
-                        objective,
-                        "PRIMARY",
-                    );
+  it("fails when one lover is dead at the end of act 2", () => {
+    const assignment = createObjectiveAssignment("cupid", objective, "PRIMARY");
 
-                const deadBob =
-                    players.map(
-                        player =>
-                            player.id
-                                === "bob"
-                                ? {
-                                    ...player,
+    const deadBob = players.map((player) =>
+      player.id === "bob"
+        ? {
+            ...player,
 
-                                    alive:
-                                        false,
-                                }
-                                : player,
-                    );
+            alive: false,
+          }
+        : player,
+    );
 
-                const evaluation =
-                    evaluateObjective({
-                        objective,
+    const evaluation = evaluateObjective({
+      objective,
 
-                        assignment,
+      assignment,
 
-                        events: [
-                            createActTwoCompletedEvent(),
-                        ],
+      events: [createActTwoCompletedEvent()],
 
-                        players:
-                            deadBob,
+      players: deadBob,
 
-                        powerTargetPlayerIds: [
-                            "alice",
-                            "bob",
-                        ],
+      powerTargetPlayerIds: ["alice", "bob"],
 
-                        gameFinished:
-                            false,
-                    });
+      gameFinished: false,
+    });
 
-                expect(
-                    evaluation.status,
-                ).toBe(
-                    "FAILED",
-                );
-            },
-        );
-    },
-);
+    expect(evaluation.status).toBe("FAILED");
+  });
+});

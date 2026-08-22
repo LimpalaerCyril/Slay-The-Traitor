@@ -1,64 +1,40 @@
-import {
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-  generateObjectiveComposition,
-} from "../../src/application/objective-assignment/objective-composition-engine.js";
+import { generateObjectiveComposition } from "../../src/application/objective-assignment/objective-composition-engine.js";
 
-import {
-  calculatePartyContradiction,
-} from "../../src/application/objective-compatibility/party-contradiction-engine.js";
+import { calculatePartyContradiction } from "../../src/application/objective-compatibility/party-contradiction-engine.js";
 
-import type {
-  GamePlayer,
-} from "../../src/domain/games/game-player.js";
+import type { GamePlayer } from "../../src/domain/games/game-player.js";
 
-import type {
-  ContradictionBudget,
-} from "../../src/domain/objectives/contradiction-budget.js";
+import type { ContradictionBudget } from "../../src/domain/objectives/contradiction-budget.js";
 
-import type {
-  ObjectiveCompatibilityRule,
-} from "../../src/domain/objectives/objective-compatibility-rule.js";
+import type { ObjectiveCompatibilityRule } from "../../src/domain/objectives/objective-compatibility-rule.js";
 
-import type {
-  Objective,
-} from "../../src/domain/objectives/objective.js";
+import type { Objective } from "../../src/domain/objectives/objective.js";
 
-const rules:
-  readonly ObjectiveCompatibilityRule[] = [
-    {
-      leftTag:
-        "SABOTAGE",
+const rules: readonly ObjectiveCompatibilityRule[] = [
+  {
+    leftTag: "SABOTAGE",
 
-      rightTag:
-        "PROTECTIVE",
+    rightTag: "PROTECTIVE",
 
-      samePlayer:
-        "ALLOWED",
+    samePlayer: "ALLOWED",
 
-      partyContradictionCost: 2,
-    },
+    partyContradictionCost: 2,
+  },
 
-    {
-      leftTag:
-        "REQUIRES_HIGH_GOLD",
+  {
+    leftTag: "REQUIRES_HIGH_GOLD",
 
-      rightTag:
-        "REQUIRES_LOW_GOLD",
+    rightTag: "REQUIRES_LOW_GOLD",
 
-      samePlayer:
-        "FORBIDDEN",
+    samePlayer: "FORBIDDEN",
 
-      partyContradictionCost: 1,
-    },
-  ];
+    partyContradictionCost: 1,
+  },
+];
 
-const budget:
-  ContradictionBudget = {
+const budget: ContradictionBudget = {
   "2": {
     minimum: 0,
     maximum: 2,
@@ -75,17 +51,13 @@ const budget:
   },
 };
 
-function createPlayer(
-  id: string,
-): GamePlayer {
+function createPlayer(id: string): GamePlayer {
   return {
     id,
 
-    discordUserId:
-      `discord-${id}`,
+    discordUserId: `discord-${id}`,
 
-    characterSlug:
-      "test-character",
+    characterSlug: "test-character",
 
     alive: true,
   };
@@ -93,10 +65,8 @@ function createPlayer(
 
 function createObjective(
   code: string,
-  type:
-    "PRIMARY" | "SECONDARY",
-  tags:
-    readonly string[],
+  type: "PRIMARY" | "SECONDARY",
+  tags: readonly string[],
 ): Objective {
   return {
     code,
@@ -109,440 +79,272 @@ function createObjective(
     minimumPlayers: 2,
     maximumPlayers: 4,
 
-    allowedTypes: [
-      type,
-    ],
+    allowedTypes: [type],
 
     requiredEvents: [],
 
-    verificationMode:
-      "DISCORD",
+    verificationMode: "DISCORD",
 
-    compatibilityTags:
-      tags,
+    compatibilityTags: tags,
 
-    score:
-      type === "PRIMARY"
-        ? 100
-        : 35,
+    score: type === "PRIMARY" ? 100 : 35,
 
     hiddenProgress: false,
 
-    supportedTrackingModes: [
-      "MANUAL",
-      "STS2",
-    ],
+    supportedTrackingModes: ["MANUAL", "STS2"],
   };
 }
 
-function createPlayers():
-  GamePlayer[] {
+function createPlayers(): GamePlayer[] {
+  return [createPlayer("alice"), createPlayer("bob"), createPlayer("charlie")];
+}
+
+function createObjectives(): Objective[] {
   return [
-    createPlayer("alice"),
-    createPlayer("bob"),
-    createPlayer("charlie"),
+    createObjective("sabotage-primary", "PRIMARY", ["SABOTAGE"]),
+
+    createObjective("neutral-primary", "PRIMARY", ["ECONOMY"]),
+
+    createObjective("protective-secondary", "SECONDARY", ["PROTECTIVE"]),
+
+    createObjective("neutral-secondary", "SECONDARY", ["INFORMATION"]),
   ];
 }
 
-function createObjectives():
-  Objective[] {
-  return [
-    createObjective(
-      "sabotage-primary",
-      "PRIMARY",
-      ["SABOTAGE"],
-    ),
+describe("ObjectiveCompositionEngine", () => {
+  it("assigns one primary and one secondary objective to every player", () => {
+    const result = generateObjectiveComposition({
+      seed: "composition-seed",
 
-    createObjective(
-      "neutral-primary",
-      "PRIMARY",
-      ["ECONOMY"],
-    ),
+      players: createPlayers(),
 
-    createObjective(
-      "protective-secondary",
-      "SECONDARY",
-      ["PROTECTIVE"],
-    ),
+      objectives: createObjectives(),
 
-    createObjective(
-      "neutral-secondary",
-      "SECONDARY",
-      ["INFORMATION"],
-    ),
-  ];
-}
+      compatibilityRules: rules,
 
-describe(
-  "ObjectiveCompositionEngine",
-  () => {
-    it("assigns one primary and one secondary objective to every player", () => {
-      const result =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
-
-          players:
-            createPlayers(),
-
-          objectives:
-            createObjectives(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      expect(
-        result.assignments,
-      ).toHaveLength(6);
-
-      for (
-        const player
-        of createPlayers()
-      ) {
-        const playerAssignments =
-          result.assignments.filter(
-            assignment =>
-              assignment.playerId
-              === player.id,
-          );
-
-        expect(
-          playerAssignments,
-        ).toHaveLength(2);
-
-        expect(
-          playerAssignments.some(
-            assignment =>
-              assignment.objectiveType
-              === "PRIMARY",
-          ),
-        ).toBe(true);
-
-        expect(
-          playerAssignments.some(
-            assignment =>
-              assignment.objectiveType
-              === "SECONDARY",
-          ),
-        ).toBe(true);
-      }
+      contradictionBudget: budget,
     });
 
-    it("produces the same composition with the same seed", () => {
-      const first =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
+    expect(result.assignments).toHaveLength(6);
 
-          players:
-            createPlayers(),
-
-          objectives:
-            createObjectives(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      const second =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
-
-          players:
-            createPlayers(),
-
-          objectives:
-            createObjectives(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      expect(
-        first,
-      ).toEqual(
-        second,
-      );
-    });
-
-    it("produces a composition inside the contradiction budget", () => {
-      const result =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
-
-          players:
-            createPlayers(),
-
-          objectives:
-            createObjectives(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      expect(
-        result.contradiction,
-      ).toBeGreaterThanOrEqual(
-        budget["3"].minimum,
+    for (const player of createPlayers()) {
+      const playerAssignments = result.assignments.filter(
+        (assignment) => assignment.playerId === player.id,
       );
 
-      expect(
-        result.contradiction,
-      ).toBeLessThanOrEqual(
-        budget["3"].maximum,
-      );
-    });
-
-    it("returns the same contradiction calculated by the contradiction engine", () => {
-      const objectives =
-        createObjectives();
-
-      const result =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
-
-          players:
-            createPlayers(),
-
-          objectives,
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      const calculated =
-        calculatePartyContradiction(
-          result.assignments,
-          objectives,
-          rules,
-        );
+      expect(playerAssignments).toHaveLength(2);
 
       expect(
-        result.contradiction,
-      ).toBe(
-        calculated.total,
-      );
-    });
-
-    it("never combines forbidden objectives for one player", () => {
-      const objectives = [
-        createObjective(
-          "high-gold",
-          "PRIMARY",
-          [
-            "REQUIRES_HIGH_GOLD",
-          ],
+        playerAssignments.some(
+          (assignment) => assignment.objectiveType === "PRIMARY",
         ),
-
-        createObjective(
-          "low-gold",
-          "SECONDARY",
-          [
-            "REQUIRES_LOW_GOLD",
-          ],
-        ),
-
-        createObjective(
-          "neutral-secondary",
-          "SECONDARY",
-          [
-            "INFORMATION",
-          ],
-        ),
-      ];
-
-      const permissiveBudget:
-        ContradictionBudget = {
-        "2": {
-          minimum: 0,
-          maximum: 10,
-        },
-
-        "3": {
-          minimum: 0,
-          maximum: 10,
-        },
-
-        "4": {
-          minimum: 0,
-          maximum: 10,
-        },
-      };
-
-      const result =
-        generateObjectiveComposition({
-          seed:
-            "forbidden-test",
-
-          players: [
-            createPlayer("alice"),
-            createPlayer("bob"),
-          ],
-
-          objectives,
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            permissiveBudget,
-        });
+      ).toBe(true);
 
       expect(
-        result.assignments.some(
-          assignment =>
-            assignment.objectiveCode
-            === "low-gold",
+        playerAssignments.some(
+          (assignment) => assignment.objectiveType === "SECONDARY",
         ),
-      ).toBe(false);
+      ).toBe(true);
+    }
+  });
+
+  it("produces the same composition with the same seed", () => {
+    const first = generateObjectiveComposition({
+      seed: "composition-seed",
+
+      players: createPlayers(),
+
+      objectives: createObjectives(),
+
+      compatibilityRules: rules,
+
+      contradictionBudget: budget,
     });
 
-    it("fails when the minimum contradiction cannot be reached", () => {
-      const impossibleBudget:
-        ContradictionBudget = {
-        "2": {
-          minimum: 10,
-          maximum: 20,
-        },
+    const second = generateObjectiveComposition({
+      seed: "composition-seed",
 
-        "3": {
-          minimum: 10,
-          maximum: 20,
-        },
+      players: createPlayers(),
 
-        "4": {
-          minimum: 10,
-          maximum: 20,
-        },
-      };
+      objectives: createObjectives(),
 
-      expect(() => {
-        generateObjectiveComposition({
-          seed:
-            "impossible-budget",
+      compatibilityRules: rules,
 
-          players:
-            createPlayers(),
-
-          objectives:
-            createObjectives(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            impossibleBudget,
-        });
-      }).toThrow(
-        "No objective composition satisfies contradiction budget 10-20 for 3 players.",
-      );
+      contradictionBudget: budget,
     });
 
-    it("does not depend on player or objective input order", () => {
-      const normal =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
+    expect(first).toEqual(second);
+  });
 
-          players:
-            createPlayers(),
+  it("produces a composition inside the contradiction budget", () => {
+    const result = generateObjectiveComposition({
+      seed: "composition-seed",
 
-          objectives:
-            createObjectives(),
+      players: createPlayers(),
 
-          compatibilityRules:
-            rules,
+      objectives: createObjectives(),
 
-          contradictionBudget:
-            budget,
-        });
+      compatibilityRules: rules,
 
-      const reversed =
-        generateObjectiveComposition({
-          seed:
-            "composition-seed",
-
-          players: [
-            ...createPlayers(),
-          ].reverse(),
-
-          objectives: [
-            ...createObjectives(),
-          ].reverse(),
-
-          compatibilityRules:
-            rules,
-
-          contradictionBudget:
-            budget,
-        });
-
-      expect(
-        reversed,
-      ).toEqual(
-        normal,
-      );
+      contradictionBudget: budget,
     });
 
-    it("fails when no compatible primary-secondary pair exists", () => {
-      const objectives = [
-        createObjective(
-          "high-gold",
-          "PRIMARY",
-          [
-            "REQUIRES_HIGH_GOLD",
-          ],
-        ),
+    expect(result.contradiction).toBeGreaterThanOrEqual(budget["3"].minimum);
 
-        createObjective(
-          "low-gold",
-          "SECONDARY",
-          [
-            "REQUIRES_LOW_GOLD",
-          ],
-        ),
-      ];
+    expect(result.contradiction).toBeLessThanOrEqual(budget["3"].maximum);
+  });
 
-      expect(() => {
-        generateObjectiveComposition({
-          seed:
-            "no-pair",
+  it("returns the same contradiction calculated by the contradiction engine", () => {
+    const objectives = createObjectives();
 
-          players: [
-            createPlayer("alice"),
-            createPlayer("bob"),
-          ],
+    const result = generateObjectiveComposition({
+      seed: "composition-seed",
 
-          objectives,
+      players: createPlayers(),
 
-          compatibilityRules:
-            rules,
+      objectives,
 
-          contradictionBudget:
-            budget,
-        });
-      }).toThrow(
-        "No compatible objective pair is available for this game.",
-      );
+      compatibilityRules: rules,
+
+      contradictionBudget: budget,
     });
-  },
-);
+
+    const calculated = calculatePartyContradiction(
+      result.assignments,
+      objectives,
+      rules,
+    );
+
+    expect(result.contradiction).toBe(calculated.total);
+  });
+
+  it("never combines forbidden objectives for one player", () => {
+    const objectives = [
+      createObjective("high-gold", "PRIMARY", ["REQUIRES_HIGH_GOLD"]),
+
+      createObjective("low-gold", "SECONDARY", ["REQUIRES_LOW_GOLD"]),
+
+      createObjective("neutral-secondary", "SECONDARY", ["INFORMATION"]),
+    ];
+
+    const permissiveBudget: ContradictionBudget = {
+      "2": {
+        minimum: 0,
+        maximum: 10,
+      },
+
+      "3": {
+        minimum: 0,
+        maximum: 10,
+      },
+
+      "4": {
+        minimum: 0,
+        maximum: 10,
+      },
+    };
+
+    const result = generateObjectiveComposition({
+      seed: "forbidden-test",
+
+      players: [createPlayer("alice"), createPlayer("bob")],
+
+      objectives,
+
+      compatibilityRules: rules,
+
+      contradictionBudget: permissiveBudget,
+    });
+
+    expect(
+      result.assignments.some(
+        (assignment) => assignment.objectiveCode === "low-gold",
+      ),
+    ).toBe(false);
+  });
+
+  it("fails when the minimum contradiction cannot be reached", () => {
+    const impossibleBudget: ContradictionBudget = {
+      "2": {
+        minimum: 10,
+        maximum: 20,
+      },
+
+      "3": {
+        minimum: 10,
+        maximum: 20,
+      },
+
+      "4": {
+        minimum: 10,
+        maximum: 20,
+      },
+    };
+
+    expect(() => {
+      generateObjectiveComposition({
+        seed: "impossible-budget",
+
+        players: createPlayers(),
+
+        objectives: createObjectives(),
+
+        compatibilityRules: rules,
+
+        contradictionBudget: impossibleBudget,
+      });
+    }).toThrow(
+      "No objective composition satisfies contradiction budget 10-20 for 3 players.",
+    );
+  });
+
+  it("does not depend on player or objective input order", () => {
+    const normal = generateObjectiveComposition({
+      seed: "composition-seed",
+
+      players: createPlayers(),
+
+      objectives: createObjectives(),
+
+      compatibilityRules: rules,
+
+      contradictionBudget: budget,
+    });
+
+    const reversed = generateObjectiveComposition({
+      seed: "composition-seed",
+
+      players: [...createPlayers()].reverse(),
+
+      objectives: [...createObjectives()].reverse(),
+
+      compatibilityRules: rules,
+
+      contradictionBudget: budget,
+    });
+
+    expect(reversed).toEqual(normal);
+  });
+
+  it("fails when no compatible primary-secondary pair exists", () => {
+    const objectives = [
+      createObjective("high-gold", "PRIMARY", ["REQUIRES_HIGH_GOLD"]),
+
+      createObjective("low-gold", "SECONDARY", ["REQUIRES_LOW_GOLD"]),
+    ];
+
+    expect(() => {
+      generateObjectiveComposition({
+        seed: "no-pair",
+
+        players: [createPlayer("alice"), createPlayer("bob")],
+
+        objectives,
+
+        compatibilityRules: rules,
+
+        contradictionBudget: budget,
+      });
+    }).toThrow("No compatible objective pair is available for this game.");
+  });
+});

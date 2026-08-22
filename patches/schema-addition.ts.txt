@@ -1,0 +1,145 @@
+// Dans src/infrastructure/database/schema.ts
+// 1) Ajouter bigint aux imports drizzle-orm/pg-core.
+// 2) Ajouter cette table APRÈS gameEventsTable et les tables bridge existantes.
+
+export const sts2BridgeEventReceiptsTable =
+    pgTable(
+        "sts2_bridge_event_receipts",
+        {
+            bridgeSessionId:
+                text(
+                    "bridge_session_id",
+                )
+                    .notNull()
+                    .references(
+                        () =>
+                            sts2BridgeSessionsTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
+
+            identityLinkId:
+                integer(
+                    "identity_link_id",
+                )
+                    .notNull()
+                    .references(
+                        () =>
+                            platformIdentityLinksTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
+
+            clientInstanceId:
+                text(
+                    "client_instance_id",
+                )
+                    .notNull(),
+
+            sequence:
+                bigint(
+                    "sequence",
+                    {
+                        mode:
+                            "number",
+                    },
+                )
+                    .notNull(),
+
+            eventType:
+                text(
+                    "event_type",
+                )
+                    .notNull(),
+
+            eventFingerprint:
+                text(
+                    "event_fingerprint",
+                )
+                    .notNull(),
+
+            disposition:
+                text(
+                    "disposition",
+                )
+                    .notNull(),
+
+            ignoredReason:
+                text(
+                    "ignored_reason",
+                ),
+
+            gameEventId:
+                text(
+                    "game_event_id",
+                )
+                    .references(
+                        () =>
+                            gameEventsTable.id,
+                        {
+                            onDelete:
+                                "cascade",
+                        },
+                    ),
+
+            receivedAt:
+                timestamp(
+                    "received_at",
+                    {
+                        withTimezone:
+                            true,
+                    },
+                )
+                    .notNull(),
+        },
+
+        table => [
+            primaryKey({
+                name:
+                    "sts2_bridge_event_receipts_pk",
+
+                columns: [
+                    table.bridgeSessionId,
+                    table.identityLinkId,
+                    table.clientInstanceId,
+                    table.sequence,
+                ],
+            }),
+
+            check(
+                "sts2_bridge_event_receipts_sequence_positive",
+                sql`
+                    ${table.sequence} > 0
+                `,
+            ),
+
+            check(
+                "sts2_bridge_event_receipts_disposition_valid",
+                sql`
+                    ${table.disposition}
+                    IN ('ACCEPTED', 'IGNORED')
+                `,
+            ),
+
+            check(
+                "sts2_bridge_event_receipts_consistency",
+                sql`
+                    (
+                        ${table.disposition} = 'ACCEPTED'
+                        AND ${table.gameEventId} IS NOT NULL
+                        AND ${table.ignoredReason} IS NULL
+                    )
+                    OR
+                    (
+                        ${table.disposition} = 'IGNORED'
+                        AND ${table.gameEventId} IS NULL
+                        AND ${table.ignoredReason} IS NOT NULL
+                    )
+                `,
+            ),
+        ],
+    );

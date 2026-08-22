@@ -1,317 +1,199 @@
-import {
-    describe,
-    expect,
-    it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-    parseObjectiveDefinition,
-} from "../../src/infrastructure/content/schemas/objective-schema.js";
+import { parseObjectiveDefinition } from "../../src/infrastructure/content/schemas/objective-schema.js";
 
 function createBaseObjective() {
-    return {
-        code:
-            "test",
+  return {
+    code: "test",
 
-        name:
-            "Test",
+    name: "Test",
 
-        description:
-            "Test",
+    description: "Test",
 
-        category:
-            "TEST",
+    category: "TEST",
 
-        difficulty:
-            "EASY",
+    difficulty: "EASY",
 
-        minimumPlayers:
-            2,
+    minimumPlayers: 2,
 
-        maximumPlayers:
-            4,
+    maximumPlayers: 4,
 
-        allowedTypes: [
-            "PRIMARY",
-        ],
+    allowedTypes: ["PRIMARY"],
 
-        requiredEvents: [],
+    requiredEvents: [],
 
-        verificationMode:
-            "DISCORD",
+    verificationMode: "DISCORD",
 
-        compatibilityTags: [],
+    compatibilityTags: [],
 
-        score:
-            100,
+    score: 100,
 
-        hiddenProgress:
-            false,
-    };
+    hiddenProgress: false,
+  };
 }
 
-describe(
-    "advanced objective rules",
-    () => {
-        it(
-            "normalizes legacy progressRule into rule",
-            () => {
-                const objective =
-                    parseObjectiveDefinition({
-                        ...createBaseObjective(),
+describe("advanced objective rules", () => {
+  it("normalizes legacy progressRule into rule", () => {
+    const objective = parseObjectiveDefinition({
+      ...createBaseObjective(),
 
-                        requiredEvents: [
-                            "CURSE_ADDED",
-                        ],
+      requiredEvents: ["CURSE_ADDED"],
 
-                        progressRule: {
-                            type:
-                                "EVENT_COUNT",
+      progressRule: {
+        type: "EVENT_COUNT",
 
-                            eventType:
-                                "CURSE_ADDED",
+        eventType: "CURSE_ADDED",
 
-                            actor:
-                                "OWNER",
+        actor: "OWNER",
 
-                            target:
-                                "OTHER",
+        target: "OTHER",
 
-                            increment:
-                                1,
+        increment: 1,
 
-                            requiredCount:
-                                2,
-                        },
-                    });
+        requiredCount: 2,
+      },
+    });
 
-                expect(
-                    objective.rule,
-                ).toEqual({
-                    type:
-                        "EVENT_COUNT",
+    expect(objective.rule).toEqual({
+      type: "EVENT_COUNT",
 
-                    eventType:
-                        "CURSE_ADDED",
+      eventType: "CURSE_ADDED",
 
-                    actor:
-                        "OWNER",
+      actor: "OWNER",
 
-                    target:
-                        "OTHER",
+      target: "OTHER",
 
-                    increment:
-                        1,
+      increment: 1,
 
-                    requiredCount:
-                        2,
-                });
-            },
-        );
+      requiredCount: 2,
+    });
+  });
 
-        it(
-            "accepts VALUE_SUM",
-            () => {
-                const objective =
-                    parseObjectiveDefinition({
-                        ...createBaseObjective(),
+  it("accepts VALUE_SUM", () => {
+    const objective = parseObjectiveDefinition({
+      ...createBaseObjective(),
 
-                        requiredEvents: [
-                            "BLOCK_GRANTED_TO_ALLY",
-                        ],
+      requiredEvents: ["BLOCK_GRANTED_TO_ALLY"],
 
-                        rule: {
-                            type:
-                                "VALUE_SUM",
+      rule: {
+        type: "VALUE_SUM",
 
-                            eventType:
-                                "BLOCK_GRANTED_TO_ALLY",
+        eventType: "BLOCK_GRANTED_TO_ALLY",
 
-                            actor:
-                                "OWNER",
+        actor: "OWNER",
 
-                            target:
-                                "OTHER",
+        target: "OTHER",
 
-                            payloadField:
-                                "amount",
+        payloadField: "amount",
 
-                            targetValue:
-                                40,
-                        },
-                    });
+        targetValue: 40,
+      },
+    });
 
-                expect(
-                    objective.rule?.type,
-                ).toBe(
-                    "VALUE_SUM",
-                );
-            },
-        );
+    expect(objective.rule?.type).toBe("VALUE_SUM");
+  });
 
-        it(
-            "accepts RANKING",
-            () => {
-                const objective =
-                    parseObjectiveDefinition({
-                        ...createBaseObjective(),
+  it("accepts RANKING", () => {
+    const objective = parseObjectiveDefinition({
+      ...createBaseObjective(),
 
-                        requiredEvents: [
-                            "GOLD_CHANGED",
-                        ],
+      requiredEvents: ["GOLD_CHANGED"],
 
-                        rule: {
-                            type:
-                                "RANKING",
+      rule: {
+        type: "RANKING",
 
-                            eventType:
-                                "GOLD_CHANGED",
+        eventType: "GOLD_CHANGED",
 
-                            participant:
-                                "ACTOR",
+        participant: "ACTOR",
 
-                            aggregation:
-                                "LATEST",
+        aggregation: "LATEST",
 
-                            payloadField:
-                                "current",
+        payloadField: "current",
 
-                            order:
-                                "HIGHEST",
+        order: "HIGHEST",
 
-                            allowTies:
-                                true,
+        allowTies: true,
 
-                            resolveAt:
-                                "GAME_END",
-                        },
-                    });
+        resolveAt: "GAME_END",
+      },
+    });
 
-                expect(
-                    objective.rule?.type,
-                ).toBe(
-                    "RANKING",
-                );
-            },
-        );
+    expect(objective.rule?.type).toBe("RANKING");
+  });
 
-        it(
-            "accepts CONDITION",
-            () => {
-                const objective =
-                    parseObjectiveDefinition({
-                        ...createBaseObjective(),
+  it("accepts CONDITION", () => {
+    const objective = parseObjectiveDefinition({
+      ...createBaseObjective(),
 
-                        rule: {
-                            type:
-                                "CONDITION",
+      rule: {
+        type: "CONDITION",
 
-                            operator:
-                                "ALL",
+        operator: "ALL",
 
-                            conditions: [
-                                {
-                                    type:
-                                        "PLAYER_ALIVE",
+        conditions: [
+          {
+            type: "PLAYER_ALIVE",
 
-                                    player:
-                                        "ROLE_TARGET",
+            player: "ROLE_TARGET",
 
-                                    expected:
-                                        true,
-                                },
-                            ],
+            expected: true,
+          },
+        ],
 
-                            completeAt:
-                                "RESOLUTION",
+        completeAt: "RESOLUTION",
 
-                            resolveAt:
-                                "GAME_END",
-                        },
-                    });
+        resolveAt: "GAME_END",
+      },
+    });
 
-                expect(
-                    objective.rule?.type,
-                ).toBe(
-                    "CONDITION",
-                );
-            },
-        );
+    expect(objective.rule?.type).toBe("CONDITION");
+  });
 
-        it(
-            "accepts FORBIDDEN_EVENT",
-            () => {
-                const objective =
-                    parseObjectiveDefinition({
-                        ...createBaseObjective(),
+  it("accepts FORBIDDEN_EVENT", () => {
+    const objective = parseObjectiveDefinition({
+      ...createBaseObjective(),
 
-                        requiredEvents: [
-                            "PLAYER_DIED",
-                        ],
+      requiredEvents: ["PLAYER_DIED"],
 
-                        rule: {
-                            type:
-                                "FORBIDDEN_EVENT",
+      rule: {
+        type: "FORBIDDEN_EVENT",
 
-                            eventType:
-                                "PLAYER_DIED",
+        eventType: "PLAYER_DIED",
 
-                            actor:
-                                "ANY",
+        actor: "ANY",
 
-                            target:
-                                "OWNER",
+        target: "OWNER",
 
-                            resolveAt:
-                                "GAME_END",
-                        },
-                    });
+        resolveAt: "GAME_END",
+      },
+    });
 
-                expect(
-                    objective.rule?.type,
-                ).toBe(
-                    "FORBIDDEN_EVENT",
-                );
-            },
-        );
+    expect(objective.rule?.type).toBe("FORBIDDEN_EVENT");
+  });
 
-        it(
-            "rejects SUM ranking without payloadField",
-            () => {
-                expect(
-                    () =>
-                        parseObjectiveDefinition({
-                            ...createBaseObjective(),
+  it("rejects SUM ranking without payloadField", () => {
+    expect(() =>
+      parseObjectiveDefinition({
+        ...createBaseObjective(),
 
-                            requiredEvents: [
-                                "GOLD_CHANGED",
-                            ],
+        requiredEvents: ["GOLD_CHANGED"],
 
-                            rule: {
-                                type:
-                                    "RANKING",
+        rule: {
+          type: "RANKING",
 
-                                eventType:
-                                    "GOLD_CHANGED",
+          eventType: "GOLD_CHANGED",
 
-                                participant:
-                                    "ACTOR",
+          participant: "ACTOR",
 
-                                aggregation:
-                                    "SUM",
+          aggregation: "SUM",
 
-                                order:
-                                    "HIGHEST",
+          order: "HIGHEST",
 
-                                allowTies:
-                                    true,
+          allowTies: true,
 
-                                resolveAt:
-                                    "GAME_END",
-                            },
-                        }),
-                ).toThrow();
-            },
-        );
-    },
-);
+          resolveAt: "GAME_END",
+        },
+      }),
+    ).toThrow();
+  });
+});

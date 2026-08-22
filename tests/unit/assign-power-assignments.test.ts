@@ -1,335 +1,207 @@
-import {
-    describe,
-    expect,
-    it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-    assignPowerAssignments,
-} from "../../src/application/power-engine/assign-power-assignments.js";
+import { assignPowerAssignments } from "../../src/application/power-engine/assign-power-assignments.js";
 
-import type {
-    Power,
-} from "../../src/domain/powers/power.js";
+import type { Power } from "../../src/domain/powers/power.js";
 
-import type {
-    Role,
-} from "../../src/domain/roles/role.js";
+import type { Role } from "../../src/domain/roles/role.js";
 
-function createRole(
-    code: string,
-    powerCode?: string,
-): Role {
-    return {
-        code,
+function createRole(code: string, powerCode?: string): Role {
+  return {
+    code,
 
-        name:
-            code,
+    name: code,
 
-        description:
-            code,
+    description: code,
 
-        alignment:
-            "LOYAL",
+    alignment: "LOYAL",
 
-        tags: [],
+    tags: [],
 
-        minimumPlayers:
-            2,
+    minimumPlayers: 2,
 
-        maximumPlayers:
-            4,
+    maximumPlayers: 4,
 
-        primaryObjectiveCode:
-            `${code}-primary`,
+    primaryObjectiveCode: `${code}-primary`,
 
-        ...(
-            powerCode === undefined
-                ? {}
-                : {
-                    powerCode,
-                }
-        ),
+    ...(powerCode === undefined
+      ? {}
+      : {
+          powerCode,
+        }),
 
-        supportedTrackingModes: [
-            "MANUAL",
-            "STS2",
-        ],
-    };
+    supportedTrackingModes: ["MANUAL", "STS2"],
+  };
 }
 
-function createPower(
-    overrides:
-        Partial<Power> = {},
-): Power {
-    return {
-        code:
-            "test-power",
+function createPower(overrides: Partial<Power> = {}): Power {
+  return {
+    code: "test-power",
 
-        name:
-            "Test Power",
+    name: "Test Power",
 
-        description:
-            "Test power",
+    description: "Test power",
 
-        mode:
-            "ACTIVE",
+    mode: "ACTIVE",
 
-        supportedTrackingModes: [
-            "MANUAL",
-            "STS2",
-        ],
+    supportedTrackingModes: ["MANUAL", "STS2"],
 
-        ...overrides,
-    };
+    ...overrides,
+  };
 }
 
-describe(
-    "assignPowerAssignments",
-    () => {
-        it(
-            "assigns the power referenced by a role",
-            () => {
-                const assignments =
-                    assignPowerAssignments({
-                        roleAssignments: [
-                            {
-                                playerId:
-                                    "alice",
+describe("assignPowerAssignments", () => {
+  it("assigns the power referenced by a role", () => {
+    const assignments = assignPowerAssignments({
+      roleAssignments: [
+        {
+          playerId: "alice",
 
-                                roleCode:
-                                    "guardian",
+          roleCode: "guardian",
 
-                                targetPlayerIds: [],
+          targetPlayerIds: [],
 
-                                setupCompleted:
-                                    true,
-                            },
-                        ],
+          setupCompleted: true,
+        },
+      ],
 
-                        roles: [
-                            createRole(
-                                "guardian",
-                                "test-power",
-                            ),
-                        ],
+      roles: [createRole("guardian", "test-power")],
 
-                        powers: [
-                            createPower(),
-                        ],
+      powers: [createPower()],
 
-                        trackingMode:
-                            "MANUAL",
-                    });
+      trackingMode: "MANUAL",
+    });
 
-                expect(
-                    assignments,
-                ).toEqual([
-                    {
-                        playerId:
-                            "alice",
+    expect(assignments).toEqual([
+      {
+        playerId: "alice",
 
-                        powerCode:
-                            "test-power",
+        powerCode: "test-power",
 
-                        targetPlayerIds: [],
+        targetPlayerIds: [],
 
-                        setupCompleted:
-                            true,
+        setupCompleted: true,
 
-                        uses:
-                            0,
-                    },
-                ]);
+        uses: 0,
+      },
+    ]);
+  });
+
+  it("does not create an assignment for a role without a power", () => {
+    const assignments = assignPowerAssignments({
+      roleAssignments: [
+        {
+          playerId: "alice",
+
+          roleCode: "guardian",
+
+          targetPlayerIds: [],
+
+          setupCompleted: true,
+        },
+      ],
+
+      roles: [createRole("guardian")],
+
+      powers: [createPower()],
+
+      trackingMode: "MANUAL",
+    });
+
+    expect(assignments).toEqual([]);
+  });
+
+  it("marks a power setup as incomplete", () => {
+    const assignments = assignPowerAssignments({
+      roleAssignments: [
+        {
+          playerId: "alice",
+
+          roleCode: "cupid",
+
+          targetPlayerIds: [],
+
+          setupCompleted: true,
+        },
+      ],
+
+      roles: [createRole("cupid", "lovers-bond")],
+
+      powers: [
+        createPower({
+          code: "lovers-bond",
+
+          mode: "PASSIVE",
+
+          setup: {
+            targetSelection: {
+              count: 2,
+
+              allowSelf: true,
             },
-        );
+          },
+        }),
+      ],
 
-        it(
-            "does not create an assignment for a role without a power",
-            () => {
-                const assignments =
-                    assignPowerAssignments({
-                        roleAssignments: [
-                            {
-                                playerId:
-                                    "alice",
+      trackingMode: "MANUAL",
+    });
 
-                                roleCode:
-                                    "guardian",
+    expect(assignments[0]?.setupCompleted).toBe(false);
+  });
 
-                                targetPlayerIds: [],
+  it("rejects an unknown referenced power", () => {
+    expect(() => {
+      assignPowerAssignments({
+        roleAssignments: [
+          {
+            playerId: "alice",
 
-                                setupCompleted:
-                                    true,
-                            },
-                        ],
+            roleCode: "guardian",
 
-                        roles: [
-                            createRole(
-                                "guardian",
-                            ),
-                        ],
+            targetPlayerIds: [],
 
-                        powers: [
-                            createPower(),
-                        ],
+            setupCompleted: true,
+          },
+        ],
 
-                        trackingMode:
-                            "MANUAL",
-                    });
+        roles: [createRole("guardian", "missing-power")],
 
-                expect(
-                    assignments,
-                ).toEqual([]);
-            },
-        );
+        powers: [],
 
-        it(
-            "marks a power setup as incomplete",
-            () => {
-                const assignments =
-                    assignPowerAssignments({
-                        roleAssignments: [
-                            {
-                                playerId:
-                                    "alice",
+        trackingMode: "MANUAL",
+      });
+    }).toThrow("Role guardian references unknown power: missing-power");
+  });
 
-                                roleCode:
-                                    "cupid",
+  it("rejects a power unsupported by the tracking mode", () => {
+    expect(() => {
+      assignPowerAssignments({
+        roleAssignments: [
+          {
+            playerId: "alice",
 
-                                targetPlayerIds: [],
+            roleCode: "cupid",
 
-                                setupCompleted:
-                                    true,
-                            },
-                        ],
+            targetPlayerIds: [],
 
-                        roles: [
-                            createRole(
-                                "cupid",
-                                "lovers-bond",
-                            ),
-                        ],
+            setupCompleted: true,
+          },
+        ],
 
-                        powers: [
-                            createPower({
-                                code:
-                                    "lovers-bond",
+        roles: [createRole("cupid", "lovers-bond")],
 
-                                mode:
-                                    "PASSIVE",
+        powers: [
+          createPower({
+            code: "lovers-bond",
 
-                                setup: {
-                                    targetSelection: {
-                                        count:
-                                            2,
+            mode: "PASSIVE",
 
-                                        allowSelf:
-                                            true,
-                                    },
-                                },
-                            }),
-                        ],
+            supportedTrackingModes: ["STS2"],
+          }),
+        ],
 
-                        trackingMode:
-                            "MANUAL",
-                    });
-
-                expect(
-                    assignments[0]
-                        ?.setupCompleted,
-                ).toBe(
-                    false,
-                );
-            },
-        );
-
-        it(
-            "rejects an unknown referenced power",
-            () => {
-                expect(() => {
-                    assignPowerAssignments({
-                        roleAssignments: [
-                            {
-                                playerId:
-                                    "alice",
-
-                                roleCode:
-                                    "guardian",
-
-                                targetPlayerIds: [],
-
-                                setupCompleted:
-                                    true,
-                            },
-                        ],
-
-                        roles: [
-                            createRole(
-                                "guardian",
-                                "missing-power",
-                            ),
-                        ],
-
-                        powers: [],
-
-                        trackingMode:
-                            "MANUAL",
-                    });
-                }).toThrow(
-                    "Role guardian references unknown power: missing-power",
-                );
-            },
-        );
-
-        it(
-            "rejects a power unsupported by the tracking mode",
-            () => {
-                expect(() => {
-                    assignPowerAssignments({
-                        roleAssignments: [
-                            {
-                                playerId:
-                                    "alice",
-
-                                roleCode:
-                                    "cupid",
-
-                                targetPlayerIds: [],
-
-                                setupCompleted:
-                                    true,
-                            },
-                        ],
-
-                        roles: [
-                            createRole(
-                                "cupid",
-                                "lovers-bond",
-                            ),
-                        ],
-
-                        powers: [
-                            createPower({
-                                code:
-                                    "lovers-bond",
-
-                                mode:
-                                    "PASSIVE",
-
-                                supportedTrackingModes: [
-                                    "STS2",
-                                ],
-                            }),
-                        ],
-
-                        trackingMode:
-                            "MANUAL",
-                    });
-                }).toThrow(
-                    "Power lovers-bond is not supported in tracking mode MANUAL.",
-                );
-            },
-        );
-    },
-);
+        trackingMode: "MANUAL",
+      });
+    }).toThrow("Power lovers-bond is not supported in tracking mode MANUAL.");
+  });
+});

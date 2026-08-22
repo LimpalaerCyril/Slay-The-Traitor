@@ -1,266 +1,140 @@
-import {
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-  assignRoles,
-} from "../../src/application/role-assignment/role-assignment-engine.js";
+import { assignRoles } from "../../src/application/role-assignment/role-assignment-engine.js";
 
-import type {
-  GamePlayer,
-} from "../../src/domain/games/game-player.js";
+import type { GamePlayer } from "../../src/domain/games/game-player.js";
 
-import type {
-  Role,
-} from "../../src/domain/roles/role.js";
+import type { Role } from "../../src/domain/roles/role.js";
 
-function createPlayer(
-  id: string,
-): GamePlayer {
+function createPlayer(id: string): GamePlayer {
   return {
     id,
 
-    discordUserId:
-      `discord-${id}`,
+    discordUserId: `discord-${id}`,
 
-    characterSlug:
-      "test-character",
+    characterSlug: "test-character",
 
-    alive:
-      true,
+    alive: true,
   };
 }
 
-function createRole(
-  code: string,
-): Role {
+function createRole(code: string): Role {
   return {
     code,
 
-    name:
-      code,
+    name: code,
 
-    description:
-      code,
+    description: code,
 
-    alignment:
-      "LOYAL",
+    alignment: "LOYAL",
 
     tags: [],
 
-    minimumPlayers:
-      2,
+    minimumPlayers: 2,
 
-    maximumPlayers:
-      4,
+    maximumPlayers: 4,
 
-    primaryObjectiveCode:
-      "test-primary",
+    primaryObjectiveCode: "test-primary",
 
-    supportedTrackingModes: [
-      "MANUAL",
-      "STS2",
-    ],
+    supportedTrackingModes: ["MANUAL", "STS2"],
   };
 }
 
-const players:
-  readonly GamePlayer[] = [
-    createPlayer(
-      "alice",
-    ),
+const players: readonly GamePlayer[] = [
+  createPlayer("alice"),
 
-    createPlayer(
-      "bob",
-    ),
-  ];
+  createPlayer("bob"),
+];
 
-const roles:
-  readonly Role[] = [
-    createRole(
-      "angel",
-    ),
+const roles: readonly Role[] = [
+  createRole("angel"),
 
-    createRole(
-      "cupid",
-    ),
+  createRole("cupid"),
 
-    createRole(
-      "guardian",
-    ),
+  createRole("guardian"),
 
-    createRole(
-      "miser",
-    ),
+  createRole("miser"),
 
-    createRole(
-      "oracle",
-    ),
-  ];
+  createRole("oracle"),
+];
 
-function createSignature(
-  assignments:
-    ReturnType<
-      typeof assignRoles
-    >,
-): string {
-  return [
-    ...assignments,
-  ]
-    .sort(
-      (
-        left,
-        right,
-      ) =>
-        left.playerId.localeCompare(
-          right.playerId,
-        ),
-    )
-    .map(
-      assignment =>
-        `${assignment.playerId}:${assignment.roleCode}`,
-    )
+function createSignature(assignments: ReturnType<typeof assignRoles>): string {
+  return [...assignments]
+    .sort((left, right) => left.playerId.localeCompare(right.playerId))
+    .map((assignment) => `${assignment.playerId}:${assignment.roleCode}`)
     .join("|");
 }
 
-describe(
-  "Role assignment variation",
-  () => {
-    it(
-      "produces the same assignment with the same seed",
-      () => {
-        const first =
-          assignRoles({
-            seed:
-              "same-seed",
+describe("Role assignment variation", () => {
+  it("produces the same assignment with the same seed", () => {
+    const first = assignRoles({
+      seed: "same-seed",
 
-            players,
+      players,
 
-            roles,
+      roles,
 
-            trackingMode: "MANUAL",
-          });
+      trackingMode: "MANUAL",
+    });
 
-        const second =
-          assignRoles({
-            seed:
-              "same-seed",
+    const second = assignRoles({
+      seed: "same-seed",
 
-            players,
+      players,
 
-            roles,
+      roles,
 
-            trackingMode: "MANUAL",
-          });
+      trackingMode: "MANUAL",
+    });
 
-        expect(
-          createSignature(
-            first,
-          ),
-        ).toBe(
-          createSignature(
-            second,
-          ),
-        );
-      },
-    );
+    expect(createSignature(first)).toBe(createSignature(second));
+  });
 
-    it(
-      "produces different assignments across different seeds",
-      () => {
-        const signatures =
-          new Set<string>();
+  it("produces different assignments across different seeds", () => {
+    const signatures = new Set<string>();
 
-        for (
-          let index = 0;
-          index < 20;
-          index += 1
-        ) {
-          const assignments =
-            assignRoles({
-              seed:
-                `variation-${index}`,
+    for (let index = 0; index < 20; index += 1) {
+      const assignments = assignRoles({
+        seed: `variation-${index}`,
 
-              players,
+        players,
 
-              roles,
+        roles,
 
-              trackingMode: "MANUAL",
-            });
+        trackingMode: "MANUAL",
+      });
 
-          signatures.add(
-            assignments
-              .map(
-                assignment =>
-                  `${assignment.playerId}:${assignment.roleCode}`,
-              )
-              .join("|"),
-          );
-        }
+      signatures.add(
+        assignments
+          .map((assignment) => `${assignment.playerId}:${assignment.roleCode}`)
+          .join("|"),
+      );
+    }
 
-        expect(
-          signatures.size,
-        ).toBeGreaterThan(
-          1,
-        );
-      },
-    );
+    expect(signatures.size).toBeGreaterThan(1);
+  });
 
-    it(
-      "does not depend on the order in which players are provided",
-      () => {
-        const normalOrder =
-          assignRoles({
-            seed:
-              "join-order-seed",
+  it("does not depend on the order in which players are provided", () => {
+    const normalOrder = assignRoles({
+      seed: "join-order-seed",
 
-            players: [
-              createPlayer(
-                "alice",
-              ),
+      players: [createPlayer("alice"), createPlayer("bob")],
 
-              createPlayer(
-                "bob",
-              ),
-            ],
+      roles,
 
-            roles,
+      trackingMode: "MANUAL",
+    });
 
-            trackingMode: "MANUAL",
-          });
+    const reversedOrder = assignRoles({
+      seed: "join-order-seed",
 
-        const reversedOrder =
-          assignRoles({
-            seed:
-              "join-order-seed",
+      players: [createPlayer("bob"), createPlayer("alice")],
 
-            players: [
-              createPlayer(
-                "bob",
-              ),
+      roles,
 
-              createPlayer(
-                "alice",
-              ),
-            ],
+      trackingMode: "MANUAL",
+    });
 
-            roles,
-            
-            trackingMode: "MANUAL",
-          });
-
-        expect(
-          createSignature(
-            reversedOrder,
-          ),
-        ).toBe(
-          createSignature(
-            normalOrder,
-          ),
-        );
-      },
-    );
-  },
-);
+    expect(createSignature(reversedOrder)).toBe(createSignature(normalOrder));
+  });
+});
